@@ -86,7 +86,7 @@ static int rel_seek(avi_reader* r, fssize_t offset)
 	return 1;
 }
 
-static void default_logprintf(void *userdata, const char* format)
+static void default_logprintf(void *userdata, const char* format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
@@ -101,8 +101,7 @@ int avi_reader_init
 	fssize_t(*f_read)(void* buffer, size_t len, void* userdata),
 	fssize_t(*f_seek)(fsize_t offset, void* userdata),
 	fssize_t(*f_tell)(void* userdata),
-	int(*f_eof)(void* userdata),
-	void(*logprintf)(void* userdata, const char* fmt)
+	void(*logprintf)(void* userdata, const char* fmt, ...)
 )
 {
 	memset(r, 0, sizeof *r);
