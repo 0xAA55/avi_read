@@ -11,6 +11,10 @@ typedef uint64_t fsize_t;
 typedef int64_t fssize_t;
 #endif
 
+#ifndef AVI_MAX_STREAMS
+#define AVI_MAX_STREAMS 8
+#endif
+
 typedef struct
 {
 	void* userdata;
@@ -20,8 +24,13 @@ typedef struct
 	int(*f_eof)(void* userdata);
 	void (*logprintf)(void* userdata, const char* fmt);
 	uint32_t riff_len;
+	avi_main_header avih;
 	uint32_t num_streams;
-}avi_stream_reader;
+	fsize_t stream_header_offsets[AVI_MAX_STREAMS];
+	fsize_t stream_data_offset;
+	int stream_data_is_lists;
+	fssize_t idx_offset;
+}avi_reader;
 
 int avi_stream_reader_init
 (
