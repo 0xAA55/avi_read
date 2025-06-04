@@ -188,17 +188,38 @@ int avi_reader_init
 							logprintf(userdata, "[INFO] Reading the stream list\r\n");
 							if (!must_match(r, "strl")) goto ErrRet;
 
-							if (r->num_streams < AVI_MAX_STREAMS)
+							do
 							{
-								fsize_t stream_header_offset;
-								if (!must_tell(r, &stream_header_offset)) return 0;
-								r->stream_header_offsets[r->num_streams++] = stream_header_offset;
-							}
-							else
-							{
-								logprintf(userdata, "[ERROR] Too many streams in the AVI file, must supported streams is %d\r\n", AVI_MAX_STREAMS);
-								return 0;
-							}
+								if (r->num_streams < AVI_MAX_STREAMS)
+								{
+									uint32_t sub_chunk_len;
+									size_t string_len = 256;
+									avi_stream_data* stream_data = &r->avi_stream_data[r->num_streams++];
+									if (!must_match(r, "strh")) goto ErrRet;
+									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
+									if (!must_read(r, &stream_data->stream_header, sub_chunk_len)) goto ErrRet;
+									if (!must_match(r, "strf")) goto ErrRet;
+									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
+									if (!must_tell(r, &stream_data->stream_format_offset)) goto ErrRet;
+									stream_data->stream_format_len = sub_chunk_len;
+									if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
+									if (!must_match(r, "strd")) break;
+									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
+									if (!must_tell(r, &stream_data->stream_additional_header_data_offset)) goto ErrRet;
+									stream_data->stream_additional_header_data_len = sub_chunk_len;
+									if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
+									if (!must_match(r, "strn")) break;
+									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
+									if (string_len > sub_chunk_len) string_len = sub_chunk_len;
+									if (!must_read(r, &stream_data->stream_name, string_len)) goto ErrRet;
+									if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
+								}
+								else
+								{
+									logprintf(userdata, "[ERROR] Too many streams in the AVI file, must supported streams is %d\r\n", AVI_MAX_STREAMS);
+									goto ErrRet;
+								}
+							} while (0);
 
 							strl_read++;
 							break;
