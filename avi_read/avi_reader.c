@@ -122,11 +122,15 @@ int avi_reader_init
 	size_t file_end = (size_t)r->riff_len + 8;
 	char fourcc_buf[5] = { 0 };
 	uint32_t chunk_size;
+	fsize_t end_of_chunk;
 	int got_all_we_need = 0;
 	while (!got_all_we_need)
 	{
+		fsize_t cur_chunk_pos;
 		if (!must_read(r, fourcc_buf, 4)) return 0;
 		if (!must_read(r, &chunk_size, 4)) return 0;
+		if (!must_tell(r, &cur_chunk_pos)) return 0;
+		end_of_chunk = cur_chunk_pos + chunk_size;
 		switch (MATCH4CC(fourcc_buf))
 		{
 		default:
@@ -141,8 +145,9 @@ int avi_reader_init
 			case MAKE4CC('h', 'd', 'r', 'l'):
 			}
 		}
+		if (!must_seek(r, end_of_chunk)) return 0;
+		if (end_of_chunk == file_end) break;
 	}
-
 
 	return 1;
 ErrRet:
