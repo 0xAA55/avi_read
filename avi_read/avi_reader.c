@@ -39,6 +39,21 @@ static int must_read(avi_reader* r, void* buffer, size_t len)
 	}
 }
 
+static int must_tell(avi_reader* r, fsize_t* cur_pos)
+{
+	fssize_t told = r->f_tell(r->userdata);
+	if (told < 0)
+	{
+		r->logprintf(r->userdata, "[ERROR] `f_tell()` failed.\r\n");
+		return 0;
+	}
+	else
+	{
+		*cur_pos = (fsize_t)told;
+		return 1;
+	}
+}
+
 static int rel_seek(avi_reader* r, fssize_t offset)
 {
 	fssize_t cur_pos = r->f_tell(r->userdata);
