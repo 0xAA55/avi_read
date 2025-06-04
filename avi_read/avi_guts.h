@@ -59,7 +59,7 @@ typedef struct
 	int32_t  biYPelsPerMeter;
 	uint32_t biClrUsed;
 	uint32_t biClrImportant;
-}bitmap_info_header;
+} bitmap_info_header;
 
 typedef struct
 {
