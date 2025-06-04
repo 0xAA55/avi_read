@@ -29,7 +29,6 @@
 fssize_t (*f_read)(void *buffer, size_t len, void* userdata);
 fssize_t (*f_seek)(fsize_t offset, void* userdata);
 fssize_t (*f_tell)(void* userdata);
-int (*f_eof)(void* userdata);
 ```
 除此以外还有一个函数指针被用于初始化 `avi_stream_reader` 但是你可以不用实现它，而是填 `NULL` 作为参数：
 ```c

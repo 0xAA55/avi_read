@@ -21,7 +21,6 @@ typedef struct
 	fssize_t(*f_read)(void *buffer, size_t len, void* userdata);
 	fssize_t(*f_seek)(fsize_t offset, void* userdata);
 	fssize_t(*f_tell)(void* userdata);
-	int(*f_eof)(void* userdata);
 	void (*logprintf)(void* userdata, const char* fmt);
 	uint32_t riff_len;
 	avi_main_header avih;
@@ -39,7 +38,6 @@ int avi_reader_init
 	fssize_t(*f_read)(void* buffer, size_t len, void* userdata),
 	fssize_t(*f_seek)(fsize_t offset, void* userdata),
 	fssize_t(*f_tell)(void* userdata),
-	int(*f_eof)(void* userdata),
 	void(*logprintf)(void* userdata, const char* fmt)
 );
 

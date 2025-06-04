@@ -25,7 +25,6 @@ See `avi_reader.h` for API definitions. The following callback functions must be
 fssize_t (*f_read)(void *buffer, size_t len, void* userdata);
 fssize_t (*f_seek)(fsize_t offset, void* userdata);
 fssize_t (*f_tell)(void* userdata);
-int (*f_eof)(void* userdata);
 ```
 There is one more callback function to be implemented but you can pass `NULL` for the API to initialize the `avi_stream_reader` which is:
 ```c
