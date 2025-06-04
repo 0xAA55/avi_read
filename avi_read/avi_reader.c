@@ -145,6 +145,86 @@ int avi_reader_init
 			switch (MATCH4CC(fourcc_buf))
 			{
 			case MAKE4CC('h', 'd', 'r', 'l'):
+				logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"hdrl\"\r\n");
+				do
+				{
+					fsize_t end_of_hdrl = end_of_chunk;
+					fsize_t h_end_of_chunk;
+					int avih_read = 0;
+					int strl_read = 0;
+
+					do
+					{
+						char h_fourcc_buf[5] = { 0 };
+						uint32_t h_chunk_size;
+						fsize_t h_chunk_pos;
+						if (!must_read(r, h_fourcc_buf, 4)) return 0;
+						if (!must_read(r, &h_chunk_size, 4)) return 0;
+						if (!must_tell(r, &h_chunk_pos)) return 0;
+						h_end_of_chunk = h_chunk_pos + h_chunk_size;
+						switch (MATCH4CC(h_fourcc_buf))
+						{
+						case MAKE4CC('a', 'v', 'i', 'h'):
+							if (avih_read)
+							{
+								logprintf(userdata, "[ERROR] AVI file format corrupted: duplicated main AVI header \"avih\"\r\n");
+								return 0;
+							}
+							logprintf(userdata, "[INFO] Reading the main AVI header \"avih\"\r\n");
+							r->avih.cb = h_chunk_size;
+							if (!must_read(r, (&(r->avih.cb))[1], r->avih.cb)) return 0;
+							avih_read = 1;
+							break;
+						case MAKE4CC('L', 'I', 'S', 'T'):
+							logprintf(userdata, "[INFO] Reading the stream list\r\n");
+							if (!must_match(r, "strl")) return 0;
+
+							if (r->num_streams < AVI_MAX_STREAMS)
+							{
+								fsize_t stream_header_offset;
+								if (!must_tell(r, &stream_header_offset)) return 0;
+								r->stream_header_offsets[r->num_streams++] = stream_header_offset;
+							}
+							else
+							{
+								logprintf(userdata, "[ERROR] Too many streams in the AVI file, must supported streams is %d\r\n", AVI_MAX_STREAMS);
+								return 0;
+							}
+
+							strl_read++;
+							break;
+						default:
+						case MAKE4CC('J', 'U', 'N', 'K'):
+							logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", h_fourcc_buf);
+							break;
+						}
+						if (!must_seek(r, h_end_of_chunk)) return 0;
+					} while (h_end_of_chunk < end_of_hdrl);
+					if (!must_seek(r, end_of_hdrl)) return 0;
+					if (!avih_read)
+					{
+						logprintf(userdata, "[ERROR] Missing main AVI header \"avih\"\r\n");
+						return 0;
+					}
+					if (!strl_read)
+					{
+						logprintf(userdata, "[ERROR] No stream found in the AVI file.\r\n");
+						return 0;
+					}
+				} while (0);
+
+				break;
+			case MAKE4CC('m', 'o', 'v', 'i'):
+				logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"movi\"\r\n");
+				if (!must_tell(r, &r->stream_data_offset)) return 0;
+
+				// Check if the AVI file uses LIST->rec pattern to store the packets
+				if (!must_read(r, fourcc_buf, 4)) return 0;
+				if (!memcmp(fourcc_buf, "LIST", 4))
+				{
+					r->stream_data_is_lists = 1;
+				}
+				break;
 			}
 		}
 		if (!must_seek(r, end_of_chunk)) return 0;
