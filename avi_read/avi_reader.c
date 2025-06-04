@@ -130,9 +130,9 @@ int avi_reader_init
 	while (!got_all_we_need)
 	{
 		fsize_t cur_chunk_pos;
-		if (!must_read(r, fourcc_buf, 4)) return 0;
-		if (!must_read(r, &chunk_size, 4)) return 0;
-		if (!must_tell(r, &cur_chunk_pos)) return 0;
+		if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
+		if (!must_read(r, &chunk_size, 4)) goto ErrRet;
+		if (!must_tell(r, &cur_chunk_pos)) goto ErrRet;
 		end_of_chunk = cur_chunk_pos + chunk_size;
 		switch (MATCH4CC(fourcc_buf))
 		{
@@ -158,9 +158,9 @@ int avi_reader_init
 						char h_fourcc_buf[5] = { 0 };
 						uint32_t h_chunk_size;
 						fsize_t h_chunk_pos;
-						if (!must_read(r, h_fourcc_buf, 4)) return 0;
-						if (!must_read(r, &h_chunk_size, 4)) return 0;
-						if (!must_tell(r, &h_chunk_pos)) return 0;
+						if (!must_read(r, h_fourcc_buf, 4)) goto ErrRet;
+						if (!must_read(r, &h_chunk_size, 4)) goto ErrRet;
+						if (!must_tell(r, &h_chunk_pos)) goto ErrRet;
 						h_end_of_chunk = h_chunk_pos + h_chunk_size;
 						switch (MATCH4CC(h_fourcc_buf))
 						{
@@ -168,16 +168,16 @@ int avi_reader_init
 							if (avih_read)
 							{
 								logprintf(userdata, "[ERROR] AVI file format corrupted: duplicated main AVI header \"avih\"\r\n");
-								return 0;
+								goto ErrRet;
 							}
 							logprintf(userdata, "[INFO] Reading the main AVI header \"avih\"\r\n");
 							r->avih.cb = h_chunk_size;
-							if (!must_read(r, (&(r->avih.cb))[1], r->avih.cb)) return 0;
+							if (!must_read(r, &(&(r->avih.cb))[1], r->avih.cb)) goto ErrRet;
 							avih_read = 1;
 							break;
 						case MAKE4CC('L', 'I', 'S', 'T'):
 							logprintf(userdata, "[INFO] Reading the stream list\r\n");
-							if (!must_match(r, "strl")) return 0;
+							if (!must_match(r, "strl")) goto ErrRet;
 
 							if (r->num_streams < AVI_MAX_STREAMS)
 							{
@@ -198,28 +198,28 @@ int avi_reader_init
 							logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", h_fourcc_buf);
 							break;
 						}
-						if (!must_seek(r, h_end_of_chunk)) return 0;
+						if (!must_seek(r, h_end_of_chunk)) goto ErrRet;
 					} while (h_end_of_chunk < end_of_hdrl);
-					if (!must_seek(r, end_of_hdrl)) return 0;
+					if (!must_seek(r, end_of_hdrl)) goto ErrRet;
 					if (!avih_read)
 					{
 						logprintf(userdata, "[ERROR] Missing main AVI header \"avih\"\r\n");
-						return 0;
+						goto ErrRet;
 					}
 					if (!strl_read)
 					{
 						logprintf(userdata, "[ERROR] No stream found in the AVI file.\r\n");
-						return 0;
+						goto ErrRet;
 					}
 				} while (0);
 
 				break;
 			case MAKE4CC('m', 'o', 'v', 'i'):
 				logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"movi\"\r\n");
-				if (!must_tell(r, &r->stream_data_offset)) return 0;
+				if (!must_tell(r, &r->stream_data_offset)) goto ErrRet;
 
 				// Check if the AVI file uses LIST->rec pattern to store the packets
-				if (!must_read(r, fourcc_buf, 4)) return 0;
+				if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 				if (!memcmp(fourcc_buf, "LIST", 4))
 				{
 					r->stream_data_is_lists = 1;
@@ -227,12 +227,13 @@ int avi_reader_init
 				break;
 			}
 		}
-		if (!must_seek(r, end_of_chunk)) return 0;
+		if (!must_seek(r, end_of_chunk)) goto ErrRet;
 		if (end_of_chunk == file_end) break;
 	}
 
 	return 1;
 ErrRet:
+	logprintf(userdata, "[FATAL] Reading AVI file failed.\r\n");
 	return 0;
 }
 
