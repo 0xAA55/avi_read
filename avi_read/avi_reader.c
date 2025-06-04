@@ -8,6 +8,13 @@
 #define MATCH4CC(str) (*(const uint32_t*)(str))
 #define MAKE4CC(c1, c2, c3, c4) ((uint32_t)(c1) | (uint32_t)((c2) << 8) | (uint32_t)((c3) << 16) | (uint32_t)((c4) << 24))
 
+#define AVIF_HASINDEX		0x00000010
+#define AVIF_MUSTUSEINDEX	0x00000020
+#define AVIF_ISINTERLEAVED	0x00000100
+#define AVIF_TRUSTCKTYPE	0x00000800
+#define AVIF_WASCAPTUREFILE	0x00010000
+#define AVIF_COPYRIGHTED	0x00020000
+
 static int must_match(avi_reader* r, const char* fourcc)
 {
 	char buf[5] = { 0 };
@@ -125,6 +132,7 @@ int avi_reader_init
 	uint32_t chunk_size;
 	fsize_t end_of_chunk;
 	int got_all_we_need = 0;
+	int has_index = 0;
 
 	// https://learn.microsoft.com/en-us/windows/win32/directshow/avi-riff-file-reference
 	while (!got_all_we_need)
@@ -173,6 +181,7 @@ int avi_reader_init
 							logprintf(userdata, "[INFO] Reading the main AVI header \"avih\"\r\n");
 							r->avih.cb = h_chunk_size;
 							if (!must_read(r, &(&(r->avih.cb))[1], r->avih.cb)) goto ErrRet;
+							has_index = (r->avih.dwFlags & AVIF_HASINDEX) == AVIF_HASINDEX;
 							avih_read = 1;
 							break;
 						case MAKE4CC('L', 'I', 'S', 'T'):
@@ -225,9 +234,14 @@ int avi_reader_init
 					r->stream_data_is_lists = 1;
 				}
 				break;
+			case MAKE4CC('i', 'd', 'x', '1'):
+				logprintf(userdata, "[INFO] Reading toplevel chunk \"idx1\"\r\n");
+				if (!must_tell(r, &r->idx_offset)) goto ErrRet;
+				break;
 			}
 		}
 		if (!must_seek(r, end_of_chunk)) goto ErrRet;
+		got_all_we_need = r->num_streams && r->stream_data_offset && ((has_index && r->idx_offset) || !has_index);
 		if (end_of_chunk == file_end) break;
 	}
 
