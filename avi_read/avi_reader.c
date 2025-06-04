@@ -113,11 +113,14 @@ int avi_reader_init
 	r->f_tell = f_tell;
 	r->logprintf = logprintf;
 
-	if (!must_match(r, "RIFF")) return 0;
-	if (!must_read(r, &r->riff_len, 4)) return 0;
-	if (!must_match(r, "AVI ")) return 0;
+	if (!must_match(r, "RIFF")) goto ErrRet;
+	if (!must_read(r, &r->riff_len, 4)) goto ErrRet;
 
-	size_t file_end = (size_t)r->riff_len + 8;
+	fsize_t avi_start;
+	if (!must_tell(r, &avi_start)) goto ErrRet;
+	if (!must_match(r, "AVI ")) goto ErrRet;
+
+	size_t file_end = (size_t)avi_start + r->riff_len;
 	char fourcc_buf[5] = { 0 };
 	uint32_t chunk_size;
 	fsize_t end_of_chunk;
