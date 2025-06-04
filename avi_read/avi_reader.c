@@ -124,6 +124,8 @@ int avi_reader_init
 	uint32_t chunk_size;
 	fsize_t end_of_chunk;
 	int got_all_we_need = 0;
+
+	// https://learn.microsoft.com/en-us/windows/win32/directshow/avi-riff-file-reference
 	while (!got_all_we_need)
 	{
 		fsize_t cur_chunk_pos;
