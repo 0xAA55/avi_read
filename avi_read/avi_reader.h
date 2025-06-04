@@ -28,7 +28,7 @@ typedef struct
 	fsize_t stream_header_offsets[AVI_MAX_STREAMS];
 	fsize_t stream_data_offset;
 	int stream_data_is_lists;
-	fssize_t idx_offset;
+	fsize_t idx_offset;
 }avi_reader;
 
 int avi_reader_init
