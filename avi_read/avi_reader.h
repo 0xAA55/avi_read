@@ -32,9 +32,9 @@ typedef struct
 	fssize_t idx_offset;
 }avi_reader;
 
-int avi_stream_reader_init
+int avi_reader_init
 (
-	avi_stream_reader* r,
+	avi_reader* r,
 	void* userdata,
 	fssize_t(*f_read)(void* buffer, size_t len, void* userdata),
 	fssize_t(*f_seek)(fsize_t offset, void* userdata),

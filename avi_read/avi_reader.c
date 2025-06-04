@@ -8,7 +8,7 @@
 #define MATCH4CC(str) (*(const uint32_t*)(str))
 #define MAKE4CC(c1, c2, c3, c4) ((uint32_t)(c1) | (uint32_t)((c2) << 8) | (uint32_t)((c3) << 16) | (uint32_t)((c4) << 24))
 
-static int match_fourcc(avi_stream_reader* r, const char* fourcc)
+static int must_match(avi_reader* r, const char* fourcc)
 {
 	char buf[5] = { 0 };
 	if (r->f_read(buf, 4, r->userdata) != 4) return 0;
@@ -20,7 +20,7 @@ static int match_fourcc(avi_stream_reader* r, const char* fourcc)
 	return 1;
 }
 
-static int must_read(avi_stream_reader* r, void* buffer, size_t len)
+static int must_read(avi_reader* r, void* buffer, size_t len)
 {
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
 	if (rl < 0)
@@ -39,7 +39,7 @@ static int must_read(avi_stream_reader* r, void* buffer, size_t len)
 	}
 }
 
-static int rel_seek(avi_stream_reader* r, fssize_t offset)
+static int rel_seek(avi_reader* r, fssize_t offset)
 {
 	fssize_t cur_pos = r->f_tell(r->userdata);
 	if (cur_pos < 0)
@@ -65,9 +65,9 @@ static void default_logprintf(void *userdata, const char* format)
 	va_end(ap);
 }
 
-int avi_stream_reader_init
+int avi_reader_init
 (
-	avi_stream_reader* r,
+	avi_reader* r,
 	void* userdata,
 	fssize_t(*f_read)(void* buffer, size_t len, void* userdata),
 	fssize_t(*f_seek)(fsize_t offset, void* userdata),
