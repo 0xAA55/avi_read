@@ -48,6 +48,14 @@ typedef struct
 
 typedef struct
 {
+	uint32_t dwChunkId;
+	uint32_t dwFlags;
+	uint32_t dwOffset;
+	uint32_t dwSize;
+} avi_index_entry;
+
+typedef struct
+{
 	uint32_t biSize;
 	int32_t  biWidth;
 	int32_t  biHeight;
