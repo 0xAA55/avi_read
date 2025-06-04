@@ -54,6 +54,20 @@ static int must_tell(avi_reader* r, fsize_t* cur_pos)
 	}
 }
 
+static int must_seek(avi_reader* r, fsize_t target)
+{
+	fssize_t told = r->f_seek(target, r->userdata);
+	if (told < 0)
+	{
+		r->logprintf(r->userdata, "[ERROR] `f_seek(%x)` failed.\r\n", target);
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
 static int rel_seek(avi_reader* r, fssize_t offset)
 {
 	fssize_t cur_pos = r->f_tell(r->userdata);
