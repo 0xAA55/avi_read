@@ -30,6 +30,7 @@ typedef struct
 
 typedef struct
 {
+	uint32_t fccType;
 	uint32_t fccHandler;
 	uint32_t dwFlags;
 	uint16_t wPriority;
