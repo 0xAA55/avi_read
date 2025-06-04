@@ -111,7 +111,6 @@ int avi_reader_init
 	r->f_read = f_read;
 	r->f_seek = f_seek;
 	r->f_tell = f_tell;
-	r->f_eof = f_eof;
 	r->logprintf = logprintf;
 
 	if (!must_match(r, "RIFF")) return 0;
