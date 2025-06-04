@@ -122,7 +122,8 @@ int avi_reader_init
 	size_t file_end = (size_t)r->riff_len + 8;
 	char fourcc_buf[5] = { 0 };
 	uint32_t chunk_size;
-	while (!f_eof(userdata))
+	int got_all_we_need = 0;
+	while (!got_all_we_need)
 	{
 		if (!must_read(r, fourcc_buf, 4)) return 0;
 		if (!must_read(r, &chunk_size, 4)) return 0;
