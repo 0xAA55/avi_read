@@ -115,9 +115,9 @@ int avi_reader_init
 	r->f_eof = f_eof;
 	r->logprintf = logprintf;
 
-	if (!match_fourcc(r, "RIFF")) return 0;
+	if (!must_match(r, "RIFF")) return 0;
 	if (!must_read(r, &r->riff_len, 4)) return 0;
-	if (!match_fourcc(r, "AVI ")) return 0;
+	if (!must_match(r, "AVI ")) return 0;
 
 	size_t file_end = (size_t)r->riff_len + 8;
 	char fourcc_buf[5] = { 0 };
@@ -135,7 +135,7 @@ int avi_reader_init
 			if (!rel_seek(r, chunk_size)) return 0;
 			break;
 		case MAKE4CC('L', 'I', 'S', 'T'):
-			if (f_read(fourcc_buf, 4, userdata) != 4) return 0;
+			if (!must_read(fourcc_buf, 4, userdata)) return 0;
 			switch (MATCH4CC(fourcc_buf))
 			{
 			case MAKE4CC('h', 'd', 'r', 'l'):
