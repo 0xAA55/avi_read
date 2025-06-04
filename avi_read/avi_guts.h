@@ -14,7 +14,22 @@ typedef struct
 
 typedef struct
 {
-	uint32_t fccType;
+	uint32_t cb;
+	uint32_t dwMicroSecPerFrame;
+	uint32_t dwMaxBytesPerSec;
+	uint32_t dwPaddingGranularity;
+	uint32_t dwFlags;
+	uint32_t dwTotalFrames;
+	uint32_t dwInitialFrames;
+	uint32_t dwStreams;
+	uint32_t dwSuggestedBufferSize;
+	uint32_t dwWidth;
+	uint32_t dwHeight;
+	uint32_t dwReserved[4];
+} avi_main_header;
+
+typedef struct
+{
 	uint32_t fccHandler;
 	uint32_t dwFlags;
 	uint16_t wPriority;
