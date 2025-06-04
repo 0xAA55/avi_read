@@ -41,6 +41,16 @@ typedef struct
 	fsize_t idx_offset;
 }avi_reader;
 
+typedef struct
+{
+	avi_reader *r;
+	int stream_id;
+	fsize_t cur_rec_list_offset;
+	fsize_t cur_rec_list_len;
+	fsize_t cur_packet_offset;
+	fsize_t cur_packet_len;
+}avi_stream_reader;
+
 int avi_reader_init
 (
 	avi_reader* r,
