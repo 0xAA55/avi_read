@@ -141,7 +141,7 @@ int avi_reader_init
 			logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", fourcc_buf);
 			break;
 		case MAKE4CC('L', 'I', 'S', 'T'):
-			if (!must_read(fourcc_buf, 4, userdata)) return 0;
+			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 			switch (MATCH4CC(fourcc_buf))
 			{
 			case MAKE4CC('h', 'd', 'r', 'l'):
