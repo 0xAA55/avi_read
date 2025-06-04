@@ -16,7 +16,7 @@
 
 建议在你的嵌入式项目里使用 `fatfs` 库。另外就是，`fatfs` 支持 `exFAT`，而 `exFAT` 支持超过 4GB 的文件。你要是想支持这样的大文件的处理，在 `#include "avi_reader.h"` 的前面加上一句：
 ```c
-#define ENABLE_4GB_FILES 1
+#define AVI_ENABLE_4GB_FILES 1
 ```
 
 我的项目文件夹里有 `.sln` 文件和 `.vcxproj` 文件。这些文件与你无关，因为我使用 Visual Studio 2022 进行开发和调试。你如果也安装了 Visual Studio 2022，你也可以用它来调试，然后给我发 PR。
