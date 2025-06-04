@@ -69,9 +69,9 @@ int avi_stream_reader_init
 (
 	avi_stream_reader* r,
 	void* userdata,
-	ptrdiff_t(*f_read)(void* buffer, size_t len, void* userdata),
-	ptrdiff_t(*f_seek)(uint64_t offset, void* userdata),
-	uint64_t (*f_tell)(void* userdata),
+	fssize_t(*f_read)(void* buffer, size_t len, void* userdata),
+	fssize_t(*f_seek)(fsize_t offset, void* userdata),
+	fssize_t(*f_tell)(void* userdata),
 	int(*f_eof)(void* userdata),
 	void(*logprintf)(void* userdata, const char* fmt)
 )
