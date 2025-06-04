@@ -3,7 +3,7 @@
 
 #include "avi_guts.h"
 
-#ifndef ENABLE_4GB_FILES
+#ifndef AVI_ENABLE_4GB_FILES
 typedef uint32_t fsize_t;
 typedef int32_t fssize_t;
 #else
