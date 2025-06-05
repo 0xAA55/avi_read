@@ -348,6 +348,11 @@ int avi_reader_init
 		if (end_of_chunk == r->end_of_file) break;
 	}
 
+	if (!r->idx_offset)
+	{
+		WARN_PRINTF(r, "No AVI index: per-stream seeking requires per-packet file traversal.\r\n");
+	}
+
 	return 1;
 ErrRet:
 	if (r) FATAL_PRINTF(r, "Reading AVI file failed.\r\n");
