@@ -72,8 +72,6 @@ typedef struct
 	int stream_id;
 	avi_stream_info *stream_info;
 	uint32_t cur_4cc;
-	fsize_t cur_rec_list_offset;
-	fsize_t cur_rec_list_len;
 	fsize_t cur_packet_offset;
 	fsize_t cur_packet_len;
 	on_stream_data_cb on_video_compressed;	/// Compressed video frame got
