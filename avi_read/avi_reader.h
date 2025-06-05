@@ -37,6 +37,11 @@ typedef struct
 	char stream_name[AVI_MAX_STREAM_NAME];
 }avi_stream_info;
 
+int avi_stream_is_video(avi_stream_info* si);
+int avi_stream_is_audio(avi_stream_info* si);
+int avi_stream_is_text(avi_stream_info* si);
+int avi_stream_is_midi(avi_stream_info* si);
+
 typedef fssize_t(*read_cb)(void *buffer, size_t len, void *userdata);
 typedef fssize_t(*seek_cb)(fsize_t offset, void *userdata);
 typedef fssize_t(*tell_cb)(void *userdata);
