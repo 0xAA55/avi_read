@@ -280,20 +280,20 @@ int avi_reader_init
 				do
 				{
 					fsize_t end_of_hdrl = end_of_chunk;
-					fsize_t h_end_of_chunk;
 					int avih_read = 0;
 					int strl_read = 0;
 
+					char hdrl_fourcc_buf[5] = { 0 };
+					uint32_t hdrl_chunk_size;
+					fsize_t hdrl_chunk_pos;
+					fsize_t hdrl_end_of_chunk;
 					do
 					{
-						char h_fourcc_buf[5] = { 0 };
-						uint32_t h_chunk_size;
-						fsize_t h_chunk_pos;
-						if (!must_read(r, h_fourcc_buf, 4)) goto ErrRet;
-						if (!must_read(r, &h_chunk_size, 4)) goto ErrRet;
-						if (!must_tell(r, &h_chunk_pos)) goto ErrRet;
-						h_end_of_chunk = h_chunk_pos + h_chunk_size;
-						switch (MATCH4CC(h_fourcc_buf))
+						if (!must_read(r, hdrl_fourcc_buf, 4)) goto ErrRet;
+						if (!must_read(r, &hdrl_chunk_size, 4)) goto ErrRet;
+						if (!must_tell(r, &hdrl_chunk_pos)) goto ErrRet;
+						hdrl_end_of_chunk = hdrl_chunk_pos + hdrl_chunk_size;
+						switch (MATCH4CC(hdrl_fourcc_buf))
 						{
 						case FCC_avih:
 						case FCC_avih_:
@@ -303,7 +303,7 @@ int avi_reader_init
 								goto ErrRet;
 							}
 							INFO_PRINTF(r, "Reading the main AVI header \"avih\"" NL);
-							r->avih.cb = h_chunk_size;
+							r->avih.cb = hdrl_chunk_size;
 							if (!must_read(r, &(&(r->avih.cb))[1], r->avih.cb)) goto ErrRet;
 							has_index = (r->avih.dwFlags & AVIF_HASINDEX) == AVIF_HASINDEX;
 							avih_read = 1;
@@ -370,11 +370,11 @@ int avi_reader_init
 						default:
 						case FCC_JUNK:
 						case FCC_JUNK_:
-							INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, h_fourcc_buf);
+							INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, hdrl_fourcc_buf);
 							break;
 						}
-						if (!must_seek(r, h_end_of_chunk)) goto ErrRet;
-					} while (h_end_of_chunk < end_of_hdrl);
+						if (!must_seek(r, hdrl_end_of_chunk)) goto ErrRet;
+					} while (hdrl_end_of_chunk < end_of_hdrl);
 					if (!must_seek(r, end_of_hdrl)) goto ErrRet;
 					if (!avih_read)
 					{
