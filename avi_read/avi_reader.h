@@ -23,6 +23,10 @@ typedef int64_t fssize_t;
 #define AVI_MAX_STREAMS 8
 #endif
 
+#ifndef AVI_MAX_STREAM_NAME
+#define AVI_MAX_STREAM_NAME 64
+#endif
+
 typedef struct
 {
 	avi_stream_header stream_header;
@@ -30,7 +34,7 @@ typedef struct
 	fsize_t stream_format_len;
 	fsize_t stream_additional_header_data_offset;
 	fsize_t stream_additional_header_data_len;
-	char stream_name[256];
+	char stream_name[AVI_MAX_STREAM_NAME];
 }avi_stream_info;
 
 typedef fssize_t(*read_cb)(void *buffer, size_t len, void *userdata);
