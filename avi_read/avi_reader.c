@@ -61,7 +61,7 @@
 #  define NL "\r\n"
 #endif
 
-static int must_match(avi_reader* r, const char* fourcc)
+static int must_match(avi_reader *r, const char *fourcc)
 {
 	char buf[5] = { 0 };
 	if (r->f_read(buf, 4, r->userdata) != 4) return 0;
@@ -73,7 +73,7 @@ static int must_match(avi_reader* r, const char* fourcc)
 	return 1;
 }
 
-static int must_read(avi_reader* r, void* buffer, size_t len)
+static int must_read(avi_reader *r, void *buffer, size_t len)
 {
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
 	if (rl < 0)
@@ -92,7 +92,7 @@ static int must_read(avi_reader* r, void* buffer, size_t len)
 	}
 }
 
-static int must_tell(avi_reader* r, fsize_t* cur_pos)
+static int must_tell(avi_reader *r, fsize_t *cur_pos)
 {
 	fssize_t told = r->f_tell(r->userdata);
 	if (told < 0)
@@ -107,7 +107,7 @@ static int must_tell(avi_reader* r, fsize_t* cur_pos)
 	}
 }
 
-static int must_seek(avi_reader* r, fsize_t target)
+static int must_seek(avi_reader *r, fsize_t target)
 {
 	fssize_t told = r->f_seek(target, r->userdata);
 	if (told < 0)
@@ -121,7 +121,7 @@ static int must_seek(avi_reader* r, fsize_t target)
 	}
 }
 
-static int rel_seek(avi_reader* r, fssize_t offset)
+static int rel_seek(avi_reader *r, fssize_t offset)
 {
 	fssize_t cur_pos = r->f_tell(r->userdata);
 	if (cur_pos < 0)
@@ -139,7 +139,7 @@ static int rel_seek(avi_reader* r, fssize_t offset)
 	return 1;
 }
 
-static void default_logprintf(void *userdata, const char* format, ...)
+static void default_logprintf(void *userdata, const char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
@@ -160,8 +160,8 @@ static avi_reader create_only_for_printf(logprintf_cb f_logprintf, avi_logprintf
 
 int avi_reader_init
 (
-	avi_reader* r,
-	void* userdata,
+	avi_reader *r,
+	void *userdata,
 	read_cb f_read,
 	seek_cb f_seek,
 	tell_cb f_tell,
@@ -175,13 +175,13 @@ int avi_reader_init
 	{
 		avi_reader fake_r = create_only_for_printf(f_logprintf, log_level, userdata);
 		r = &fake_r;
-		FATAL_PRINTF(r, "Invalid parameter : `avi_reader* r` must not be NULL." NL);
+		FATAL_PRINTF(r, "Invalid parameter: `avi_reader *r` must not be NULL." NL);
 		r = NULL;
 		goto ErrRet;
 	}
 #endif
 
-	memset(r, 0, sizeof * r);
+	memset(r, 0, sizeof  *r);
 	r->userdata = userdata;
 	r->f_read = f_read;
 	r->f_seek = f_seek;
@@ -197,7 +197,7 @@ int avi_reader_init
 	}
 	if (!f_seek)
 	{
-		FATAL_PRINTF(r, "Invalid parameter : must provide your `seek_cb` implementation." NL);
+		FATAL_PRINTF(r, "Invalid parameter: must provide your `seek_cb` implementation." NL);
 		goto ErrRet;
 	}
 	if (!f_tell)
@@ -417,7 +417,7 @@ int avi_get_stream_reader
 	{
 		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
 		r = &fake_r;
-		FATAL_PRINTF(r, "Param `avi_reader* r` must not be NULL. You get your stream from what?" NL);
+		FATAL_PRINTF(r, "Param `avi_reader *r` must not be NULL. You get your stream from what?" NL);
 		r = NULL;
 		goto ErrRet;
 	}
@@ -428,7 +428,7 @@ int avi_get_stream_reader
 	}
 	if (!s_out)
 	{
-		FATAL_PRINTF(r, "Param `avi_stream_reader* s_out` must not be NULL. You asked for a stream but passed a NULL pointer, what's wrong with you?" NL);
+		FATAL_PRINTF(r, "Param `avi_stream_reader *s_out` must not be NULL. You asked for a stream but passed a NULL pointer, what's wrong with you?" NL);
 		goto ErrRet;
 	}
 #endif
