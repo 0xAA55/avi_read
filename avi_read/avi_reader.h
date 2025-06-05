@@ -70,6 +70,7 @@ typedef struct
 {
 	avi_reader *r;
 	int stream_id;
+	uint32_t cur_4cc;
 	fsize_t cur_rec_list_offset;
 	fsize_t cur_rec_list_len;
 	fsize_t cur_packet_offset;

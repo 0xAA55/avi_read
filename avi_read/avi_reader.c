@@ -434,6 +434,7 @@ int avi_get_stream
 			if (stream_no == stream_id)
 			{
 				INFO_PRINTF(r, "Successfully found the first packet of the stream %d: Offset = 0x%"PRIx32", Length = 0x%"PRIx32"." NL, stream_id, index.dwOffset, index.dwSize);
+				s_out->cur_4cc = index.dwChunkId;
 				s_out->cur_packet_offset = index.dwOffset;
 				s_out->cur_packet_len = index.dwSize;
 				break;
@@ -480,6 +481,7 @@ int avi_get_stream
 				else if (stream_no == stream_id)
 				{
 					INFO_PRINTF(r, "Successfully found the first packet of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, stream_id, chunk_start, chunk_size);
+					s_out->cur_4cc = *(uint32_t*)fourcc_buf;
 					s_out->cur_packet_offset = chunk_start;
 					s_out->cur_packet_len = chunk_size;
 					break;
