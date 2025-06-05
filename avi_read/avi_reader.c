@@ -43,6 +43,11 @@
 #define FCC_movi MAKE4CC('m', 'o', 'v', 'i')
 #define FCC_idx1 MAKE4CC('i', 'd', 'x', '1')
 
+#define FATAL_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_FATAL) r->f_logprintf(r->userdata, "[FATAL] " ## fmt, __VA_ARGS__)
+#define WARN_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_WARN) r->f_logprintf(r->userdata, "[WARN] " ## fmt, __VA_ARGS__)
+#define INFO_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_INFO) r->f_logprintf(r->userdata, "[INFO] " ## fmt, __VA_ARGS__)
+#define DEBUG_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_DEBUG) r->f_logprintf(r->userdata, "[DEBUG] " ## fmt, __VA_ARGS__)
+
 static int must_match(avi_reader* r, const char* fourcc)
 {
 	char buf[5] = { 0 };
