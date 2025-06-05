@@ -267,8 +267,10 @@ int avi_reader_init
 								if (r->num_streams < AVI_MAX_STREAMS)
 								{
 									uint32_t sub_chunk_len;
-									size_t string_len = 256;
+									uint32_t stream_id = r->num_streams;
 									avi_stream_data* stream_data = &r->avi_stream_data[r->num_streams++];
+									memset(stream_data, 0, sizeof *stream_data);
+									size_t string_len = (sizeof stream_data->stream_name) - 1;
 									if (!must_match(r, "strh")) goto ErrRet;
 									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
 									if (!must_read(r, &stream_data->stream_header, sub_chunk_len)) goto ErrRet;
@@ -277,16 +279,33 @@ int avi_reader_init
 									if (!must_tell(r, &stream_data->stream_format_offset)) goto ErrRet;
 									stream_data->stream_format_len = sub_chunk_len;
 									if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
-									if (!must_match(r, "strd")) break;
-									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
-									if (!must_tell(r, &stream_data->stream_additional_header_data_offset)) goto ErrRet;
-									stream_data->stream_additional_header_data_len = sub_chunk_len;
-									if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
-									if (!must_match(r, "strn")) break;
-									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
-									if (string_len > sub_chunk_len) string_len = sub_chunk_len;
-									if (!must_read(r, &stream_data->stream_name, string_len)) goto ErrRet;
-									if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
+									if (must_match(r, "strd"))
+									{
+										if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
+										if (!must_tell(r, &stream_data->stream_additional_header_data_offset)) goto ErrRet;
+										stream_data->stream_additional_header_data_len = sub_chunk_len;
+										if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
+									}
+									if (must_match(r, "strn"))
+									{
+										if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
+										if (string_len > sub_chunk_len) string_len = sub_chunk_len;
+										if (!must_read(r, &stream_data->stream_name, string_len)) goto ErrRet;
+										if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
+									}
+									else
+									{
+										string_len = 0;
+									}
+
+									char fourcc_type[5] = { 0 };
+									char fourcc_handler[5] = { 0 };
+									*(uint32_t*)fourcc_type = stream_data->stream_header.fccType;
+									*(uint32_t*)fourcc_handler = stream_data->stream_header.fccHandler;
+									if (!string_len)
+										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\"\r\n", stream_id, fourcc_type, fourcc_handler);
+									else
+										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\", Name: %s\r\n", stream_id, fourcc_type, fourcc_handler, stream_data->stream_name);
 								}
 								else
 								{
