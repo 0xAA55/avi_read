@@ -25,13 +25,18 @@ typedef struct
 	char stream_name[256];
 }avi_stream_data;
 
+typedef fssize_t(*read_cb)(void* buffer, size_t len, void* userdata);
+typedef fssize_t(*seek_cb)(fsize_t offset, void* userdata);
+typedef fssize_t(*tell_cb)(void* userdata);
+typedef void (*logprintf_cb)(void* userdata, const char* fmt, ...);
+
 typedef struct
 {
 	void* userdata;
-	fssize_t(*f_read)(void *buffer, size_t len, void* userdata);
-	fssize_t(*f_seek)(fsize_t offset, void* userdata);
-	fssize_t(*f_tell)(void* userdata);
-	void (*logprintf)(void* userdata, const char* fmt, ...);
+	read_cb f_read;
+	seek_cb f_seek;
+	tell_cb f_tell;
+	logprintf_cb f_logprintf;
 	uint32_t riff_len;
 	avi_main_header avih;
 	uint32_t num_streams;
@@ -55,10 +60,10 @@ int avi_reader_init
 (
 	avi_reader* r,
 	void* userdata,
-	fssize_t(*f_read)(void* buffer, size_t len, void* userdata),
-	fssize_t(*f_seek)(fsize_t offset, void* userdata),
-	fssize_t(*f_tell)(void* userdata),
-	void(*logprintf)(void* userdata, const char* fmt, ...)
+	read_cb f_read,
+	seek_cb f_seek,
+	tell_cb f_tell,
+	logprintf_cb f_logprintf
 );
 
 
