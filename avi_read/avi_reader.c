@@ -305,6 +305,11 @@ int avi_reader_init
 							INFO_PRINTF(r, "Reading the main AVI header \"avih\"" NL);
 							r->avih.cb = hdrl_chunk_size;
 							if (!must_read(r, &(&(r->avih.cb))[1], r->avih.cb)) goto ErrRet;
+							if (r->avih.dwStreams > AVI_MAX_STREAMS)
+							{
+								FATAL_PRINTF(r, "The AVI file contains too many streams (%u) exceeded the limit %d" NL, r->avih.dwStreams, AVI_MAX_STREAMS);
+								goto ErrRet;
+							}
 							has_index = (r->avih.dwFlags & AVIF_HASINDEX) == AVIF_HASINDEX;
 							avih_read = 1;
 							break;
