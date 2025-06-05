@@ -90,12 +90,31 @@ typedef struct
 
 typedef struct
 {
+	/// The `avi_reader` struct pointer, we borrow its callback functions to call read()/seek()/tell()/printf()
 	avi_reader *r;
+
+	/// The stream index start from zero.
 	int stream_id;
+
+	/// The short path to `r->avi_stream_info[self->stream_id]`
 	avi_stream_info *stream_info;
+
+	/// The current packet FourCC value. Used to determine the type of the packet.
 	uint32_t cur_4cc;
+
+	/// The current packet index
+	fsize_t cur_packet_index;
+
+	/// The current stream packet index
+	fsize_t cur_stream_packet_index;
+
+	/// The current packet position in the file.
 	fsize_t cur_packet_offset;
+
+	/// The current packet length
 	fsize_t cur_packet_len;
+
+	/// Your callback functions, when the packet is going to be processed, the callback functions will be called.
 	on_stream_data_cb on_video_compressed;	/// Compressed video frame got
 	on_stream_data_cb on_video;				/// Uncompressed video frame (probably BMP) got
 	on_stream_data_cb on_palette_change;	/// Palette change for your video (If the AVI file is using color index as pixel data, the actual color in RGB form comes from the palette)
