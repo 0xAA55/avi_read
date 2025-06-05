@@ -493,8 +493,6 @@ int avi_get_stream_reader
 			{
 				if (!must_match(r, "rec ")) goto ErrRet;
 				DEBUG_PRINTF(r, "Seeking into a LIST(rec) chunk." NL);
-				s_out->cur_rec_list_offset = chunk_start + 4;
-				s_out->cur_rec_list_len = chunk_size - 4;
 				// Move inside the LIST chunk to find the packet.
 				continue; // Not to skip the chunk.
 			}
