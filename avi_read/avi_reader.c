@@ -447,12 +447,47 @@ int avi_get_stream_reader
 	s_out->on_video = on_video;
 	s_out->on_palette_change = on_palette_change;
 	s_out->on_audio = on_audio;
+
+	return avi_stream_reader_move_to_next_packet(s_out);
+ErrRet:
+	if (r) FATAL_PRINTF(r, "Reading AVI file failed." NL);
+	if (s_out) memset(s_out, 0, sizeof  *s_out);
+	return 0;
+}
+
+int avi_stream_reader_move_to_next_packet(avi_stream_reader *s)
+{
+	avi_reader *r = NULL;
+#if AVI_ROBUSTINESS
+	if (!s)
+	{
+		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
+		r = &fake_r;
+		FATAL_PRINTF(r, "Param `avi_stream_reader *r` must not be NULL. You are reading packets from the void." NL);
+		r = NULL;
+		goto ErrRet;
+	}
+#endif
+	r = s->r;
+	fsize_t packet_no = s->cur_stream_packet_index;
+	fsize_t packet_no_avi = s->cur_packet_index;
+	int stream_id = s->stream_id;
+
+	// The kickstart of the packet seeking
+	if (!s->cur_packet_offset)
+	{
+		packet_no = 0;
+		packet_no_avi = 0;
+		s->cur_packet_offset = r->stream_data_offset;
+		s->cur_packet_len = 0;
+	}
+
 	if (r->idx_offset && r->num_indices)
 	{
-		INFO_PRINTF(r, "Seeking the first packet of the stream %d using the indices from the AVI file." NL, stream_id);
+		DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d using the indices from the AVI file." NL, packet_no + 1, stream_id);
 		if (!must_seek(r, r->idx_offset)) goto ErrRet;
 		avi_index_entry index;
-		for (fsize_t i = 0; i < r->num_indices; i++)
+		for (fsize_t i = packet_no_avi; i < r->num_indices; i++)
 		{
 			int stream_no;
 			char fourcc_buf[5] = { 0 };
@@ -461,28 +496,31 @@ int avi_get_stream_reader
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
 			if (stream_no == stream_id)
 			{
-				INFO_PRINTF(r, "Successfully found the first packet of the stream %d: Offset = 0x%"PRIx32", Length = 0x%"PRIx32"." NL, stream_id, index.dwOffset, index.dwSize);
-				s_out->cur_4cc = index.dwChunkId;
-				s_out->cur_packet_offset = index.dwOffset;
-				s_out->cur_packet_len = index.dwSize;
+				DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIx32", Length = 0x%"PRIx32"." NL, packet_no, stream_id, index.dwOffset, index.dwSize);
+				s->cur_4cc = index.dwChunkId;
+				s->cur_packet_index = i;
+				s->cur_packet_offset = index.dwOffset;
+				s->cur_packet_len = index.dwSize;
+				s->cur_stream_packet_index = packet_no + 1;
 				break;
 			}
 		}
-		if (!s_out->cur_packet_offset || !s_out->cur_packet_len)
+		if (!s->cur_packet_offset || !s->cur_packet_len)
 		{
-			FATAL_PRINTF(r, "Could not find the first packet for the stream id %d." NL, stream_id);
+			FATAL_PRINTF(r, "Could not find packet %"PRIfsize_t" for the stream id %d." NL, packet_no + 1, stream_id);
 			goto ErrRet;
 		}
 	}
 	else
 	{
-		INFO_PRINTF(r, "Seeking the first packet of the stream %d via file traversal." NL, stream_id);
-		if (!must_seek(r, r->stream_data_offset)) goto ErrRet;
+		DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d via file traversal." NL, packet_no + 1, stream_id);
+		if (!must_seek(r, s->cur_packet_offset + s->cur_packet_len)) goto ErrRet;
 
 		char fourcc_buf[5] = { 0 };
 		uint32_t chunk_size;
 		fsize_t chunk_start = 0;
 		fsize_t chunk_end = 0;
+		fsize_t packet_index = 0;
 		do
 		{
 			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
@@ -506,24 +544,36 @@ int avi_get_stream_reader
 				}
 				else if (stream_no == stream_id)
 				{
-					INFO_PRINTF(r, "Successfully found the first packet of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, stream_id, chunk_start, chunk_size);
-					s_out->cur_4cc = *(uint32_t*)fourcc_buf;
-					s_out->cur_packet_offset = chunk_start;
-					s_out->cur_packet_len = chunk_size;
+					DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no + 1, stream_id, chunk_start, chunk_size);
+					s->cur_4cc = *(uint32_t*)fourcc_buf;
+					s->cur_packet_index = packet_index;
+					s->cur_packet_offset = chunk_start;
+					s->cur_packet_len = chunk_size;
+					s->cur_stream_packet_index = packet_no + 1;
 					break;
 				}
+				else if (!(
+					memcmp(&fourcc_buf[2], "db", 2) &
+					memcmp(&fourcc_buf[2], "dc", 2) &
+					memcmp(&fourcc_buf[2], "pc", 2) &
+					memcmp(&fourcc_buf[2], "wb", 2)))
+				{
+					packet_index++;
+				}
 			}
+			// Skip the current chunk
 			if (!must_seek(r, chunk_end)) goto ErrRet;
 		} while (chunk_end < r->end_of_file);
-		if (!s_out->cur_packet_offset || !s_out->cur_packet_len)
+		if (!s->cur_packet_offset || !s->cur_packet_len)
 		{
-			FATAL_PRINTF(r, "No first packet found for stream id %d after full file traversal." NL, stream_id);
+			FATAL_PRINTF(r, "No packet found for stream id %d after full file traversal." NL, stream_id);
 			goto ErrRet;
 		}
 	}
 
 	return 1;
 ErrRet:
-	if (r) FATAL_PRINTF(r, "Reading AVI file failed." NL);
+	if (r) FATAL_PRINTF(r, "`avi_stream_reader_move_to_next_packet()` failed." NL);
 	return 0;
 }
+
