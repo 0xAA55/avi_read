@@ -55,7 +55,6 @@ typedef struct
 	tell_cb f_tell;
 	logprintf_cb f_logprintf;
 	avi_logprintf_level log_level;
-	uint32_t riff_len;
 	fsize_t end_of_file;
 	avi_main_header avih;
 	uint32_t num_streams;
