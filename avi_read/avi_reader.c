@@ -378,6 +378,76 @@ ErrRet:
 	return 0;
 }
 
+int avi_get_stream
+(
+	avi_reader* r,
+	int stream_id,
+	avi_stream_reader* s_out
+)
+{
+	void* userdata = NULL;
+	logprintf_cb logprintf = default_logprintf;
+#if AVI_ROBUSTINESS
+	if (!r)
+	{
+		avi_reader fake_r = create_only_for_printf(logprintf, PRINT_FATAL, userdata);
+		r = &fake_r;
+		FATAL_PRINTF(r, "Param `avi_reader* r` must not be NULL. You get your stream from what?\r\n");
+		r = NULL;
+		goto ErrRet;
+	}
+	userdata = r->userdata;
+	logprintf = r->f_logprintf;
+	if (stream_id >= (int)r->num_streams)
+	{
+		FATAL_PRINTF(r, "Bad stream id `%d` (Max: `%u`)\r\n", stream_id, r->num_streams);
+		goto ErrRet;
+	}
+	if (!s_out)
+	{
+		FATAL_PRINTF(r, "Param `avi_stream_reader* s_out` must not be NULL. You asked for a stream but passed a NULL pointer, what's wrong with you?\r\n");
+		goto ErrRet;
+	}
+#endif
+
+	memset(s_out, 0, sizeof * s_out);
+	s_out->r = r;
+	s_out->stream_id = stream_id;
+	if (r->idx_offset && r->num_indices)
+	{
+		INFO_PRINTF(r, "Seeking for the first packet of the stream %d using the indices from the AVI file.\r\n", stream_id);
+		if (!must_seek(r, r->idx_offset)) goto ErrRet;
+		avi_index_entry index;
+		for (fsize_t i = 0; i < r->num_indices; i++)
+		{
+			int stream_no;
+			char fourcc_buf[5] = { 0 };
+			if (!must_read(r, &index, sizeof index)) goto ErrRet;
+			*(uint32_t*)fourcc_buf = index.dwChunkId;
+			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
+			if (stream_no == stream_id)
+			{
+				INFO_PRINTF(r, "Successfully find the first packet of the stream %d: Offset = 0x%x, Length = 0x%x.\r\n", stream_id, index.dwOffset, index.dwSize);
+				s_out->cur_packet_offset = index.dwOffset;
+				s_out->cur_packet_len = index.dwSize;
+				break;
+			}
+		}
+		if (!s_out->cur_packet_offset || !s_out->cur_packet_len)
+		{
+			FATAL_PRINTF(r, "Could not find the first packet for the stream id %d.\r\n", stream_id);
+			goto ErrRet;
+		}
+	}
+	else
+	{
 
 
 
+	}
+
+	return 1;
+ErrRet:
+	if (r) FATAL_PRINTF(r, "Reading AVI file failed.\r\n");
+	return 0;
+}
