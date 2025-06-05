@@ -5,6 +5,10 @@
 #include <string.h>
 #include <stdarg.h>
 
+#define AVI_ROBUSTINESS 1
+#if AVI_NO_ROBUSTINESS
+#undef AVI_ROBUSTINESS
+#endif
 
 #define AVIF_HASINDEX		0x00000010
 #define AVIF_MUSTUSEINDEX	0x00000020
