@@ -5,8 +5,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define MATCH4CC(str) (*(const uint32_t*)(str))
-#define MAKE4CC(c1, c2, c3, c4) ((uint32_t)(c1) | (uint32_t)((c2) << 8) | (uint32_t)((c3) << 16) | (uint32_t)((c4) << 24))
 
 #define AVIF_HASINDEX		0x00000010
 #define AVIF_MUSTUSEINDEX	0x00000020
@@ -24,6 +22,9 @@
 
 #define AVIIF_NOTIME	    0x00000100L // this frame doesn't take any time
 #define AVIIF_COMPUSE       0x0FFF0000L // these bits are for compressor use
+
+#define MATCH4CC(str) (*(const uint32_t*)(str))
+#define MAKE4CC(c1, c2, c3, c4) ((uint32_t)(c1) | (uint32_t)((c2) << 8) | (uint32_t)((c3) << 16) | (uint32_t)((c4) << 24))
 static int must_match(avi_reader* r, const char* fourcc)
 {
 	char buf[5] = { 0 };
