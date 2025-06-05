@@ -30,6 +30,15 @@ typedef fssize_t(*seek_cb)(fsize_t offset, void* userdata);
 typedef fssize_t(*tell_cb)(void* userdata);
 typedef void (*logprintf_cb)(void* userdata, const char* fmt, ...);
 
+typedef enum
+{
+	PRINT_NOTHING = 0,
+	PRINT_FATAL = 1,
+	PRINT_WARN = 2,
+	PRINT_INFO = 3,
+	PRINT_DEBUG = 4,
+}avi_logprintf_level;
+
 typedef struct
 {
 	void* userdata;
@@ -37,6 +46,7 @@ typedef struct
 	seek_cb f_seek;
 	tell_cb f_tell;
 	logprintf_cb f_logprintf;
+	avi_logprintf_level log_level;
 	uint32_t riff_len;
 	avi_main_header avih;
 	uint32_t num_streams;
@@ -63,7 +73,8 @@ int avi_reader_init
 	read_cb f_read,
 	seek_cb f_seek,
 	tell_cb f_tell,
-	logprintf_cb f_logprintf
+	logprintf_cb f_logprintf,
+	avi_logprintf_level log_level
 );
 
 
