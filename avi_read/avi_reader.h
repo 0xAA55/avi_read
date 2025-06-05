@@ -169,6 +169,12 @@ int avi_get_stream_reader
 	avi_stream_reader *s_out
 );
 
+/// <summary>
+/// Call the callback functions of a `avi_stream_reader` struct for the current packet.
+/// </summary>
+/// <param name="s">Your stream reader</param>
+/// <returns>0 for fail, nonzero for success.</returns>
+int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
 
 /// <summary>
 /// Move to the next packet, then call the callback functions for you to receive the packet.
@@ -177,4 +183,5 @@ int avi_get_stream_reader
 /// <param name="s">Your stream reader</param>
 /// <returns>0 for fail, nonzero for success.</returns>
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s);
+
 #endif

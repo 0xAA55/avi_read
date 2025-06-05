@@ -455,6 +455,35 @@ ErrRet:
 	return 0;
 }
 
+int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
+{
+	avi_reader *r = NULL;
+#if AVI_ROBUSTINESS
+	if (!s)
+	{
+		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
+		r = &fake_r;
+		FATAL_PRINTF(r, "Invalid parameter: `avi_stream_reader *s` must not be NULL, because all of the callback functions needed are in the structure." NL);
+		r = NULL;
+		goto ErrRet;
+	}
+#endif
+	r = s->r;
+	char fourcc_buf[5] = { 0 };
+	*(uint32_t*)fourcc_buf = s->cur_4cc;
+	switch (MATCH2CC(fourcc_buf)) // Avoid endianess handling
+	{
+	case TCC_db: s->on_video(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
+	case TCC_dc: s->on_video_compressed(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
+	case TCC_pc: s->on_palette_change(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
+	case TCC_wb: s->on_audio(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
+	}
+	return 1;
+ErrRet:
+	if (r) FATAL_PRINTF(r, "`avi_stream_call_callback_functions()` failed." NL);
+	return 0;
+}
+
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s)
 {
 	avi_reader *r = NULL;
@@ -502,6 +531,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s)
 				s->cur_packet_offset = index.dwOffset;
 				s->cur_packet_len = index.dwSize;
 				s->cur_stream_packet_index = packet_no + 1;
+				if (!avi_stream_reader_call_callback_functions(s)) goto ErrRet;
 				break;
 			}
 		}
@@ -550,6 +580,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s)
 					s->cur_packet_offset = chunk_start;
 					s->cur_packet_len = chunk_size;
 					s->cur_stream_packet_index = packet_no + 1;
+					if (!avi_stream_reader_call_callback_functions(s)) goto ErrRet;
 					break;
 				}
 				else if (!(
