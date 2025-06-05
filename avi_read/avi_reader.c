@@ -281,7 +281,7 @@ int avi_reader_init
 								{
 									uint32_t sub_chunk_len;
 									uint32_t stream_id = r->num_streams;
-									avi_stream_data* stream_data = &r->avi_stream_data[r->num_streams++];
+									avi_stream_info *stream_data = &r->avi_stream_info[r->num_streams++];
 									memset(stream_data, 0, sizeof *stream_data);
 									size_t string_len = (sizeof stream_data->stream_name) - 1;
 									if (!must_match(r, "strh")) goto ErrRet;
