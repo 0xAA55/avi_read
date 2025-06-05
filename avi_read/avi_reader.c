@@ -156,14 +156,43 @@ int avi_reader_init
 	avi_logprintf_level log_level
 )
 {
-	memset(r, 0, sizeof *r);
 	if (!f_logprintf) f_logprintf = default_logprintf;
+#if AVI_ROBUSTINESS
+	if (!r)
+	{
+		avi_reader fake_r = create_only_for_printf(f_logprintf, log_level, userdata);
+		r = &fake_r;
+		FATAL_PRINTF(r, "Invalid parameter : `avi_reader* r` must not be NULL.\r\n");
+		r = NULL;
+		goto ErrRet;
+	}
+#endif
 
+	memset(r, 0, sizeof * r);
 	r->userdata = userdata;
 	r->f_read = f_read;
 	r->f_seek = f_seek;
 	r->f_tell = f_tell;
 	r->f_logprintf = f_logprintf;
+	r->log_level = log_level;
+
+#if AVI_ROBUSTINESS
+	if (!f_read)
+	{
+		FATAL_PRINTF(r, "Invalid parameter: must provide your `read_cb` implementation.\r\n");
+		goto ErrRet;
+	}
+	if (!f_seek)
+	{
+		FATAL_PRINTF(r, "Invalid parameter : must provide your `seek_cb` implementation.\r\n");
+		goto ErrRet;
+	}
+	if (!f_tell)
+	{
+		FATAL_PRINTF(r, "Invalid parameter: must provide your `tell_cb` implementation.\r\n");
+		goto ErrRet;
+	}
+#endif
 
 	if (!must_match(r, "RIFF")) goto ErrRet;
 	if (!must_read(r, &r->riff_len, 4)) goto ErrRet;
