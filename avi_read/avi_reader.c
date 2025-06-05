@@ -432,12 +432,14 @@ int avi_reader_init
 					}
 				}
 				break;
-			case FCC_idx1:
-				INFO_PRINTF(r, "Reading toplevel chunk \"idx1\"" NL);
-				if (!must_tell(r, &r->idx_offset)) goto ErrRet;
-				r->num_indices = chunk_size / sizeof(avi_index_entry);
-				break;
 			}
+			break;
+		case FCC_idx1:
+		case FCC_idx1_:
+			INFO_PRINTF(r, "Reading toplevel chunk \"idx1\"" NL);
+			if (!must_tell(r, &r->idx_offset)) goto ErrRet;
+			r->num_indices = chunk_size / sizeof(avi_index_entry);
+			break;
 		}
 		// Skip the current chunk
 		if (!must_seek(r, end_of_chunk)) goto ErrRet;
