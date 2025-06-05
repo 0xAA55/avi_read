@@ -199,15 +199,15 @@ int avi_reader_init
 		goto ErrRet;
 	}
 #endif
-
+	uint32_t riff_len;
 	if (!must_match(r, "RIFF")) goto ErrRet;
-	if (!must_read(r, &r->riff_len, 4)) goto ErrRet;
+	if (!must_read(r, &riff_len, 4)) goto ErrRet;
 
 	fsize_t avi_start;
 	if (!must_tell(r, &avi_start)) goto ErrRet;
 	if (!must_match(r, "AVI ")) goto ErrRet;
 
-	r->end_of_file = (size_t)avi_start + r->riff_len;
+	r->end_of_file = (size_t)avi_start + riff_len;
 	char fourcc_buf[5] = { 0 };
 	uint32_t chunk_size;
 	fsize_t end_of_chunk;
