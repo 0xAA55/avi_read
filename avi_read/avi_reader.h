@@ -33,10 +33,10 @@ typedef struct
 	char stream_name[256];
 }avi_stream_info;
 
-typedef fssize_t(*read_cb)(void* buffer, size_t len, void* userdata);
-typedef fssize_t(*seek_cb)(fsize_t offset, void* userdata);
-typedef fssize_t(*tell_cb)(void* userdata);
-typedef void (*logprintf_cb)(void* userdata, const char* fmt, ...);
+typedef fssize_t(*read_cb)(void *buffer, size_t len, void *userdata);
+typedef fssize_t(*seek_cb)(fsize_t offset, void *userdata);
+typedef fssize_t(*tell_cb)(void *userdata);
+typedef void (*logprintf_cb)(void *userdata, const char *fmt, ...);
 
 typedef void(*on_stream_data_cb)(fsize_t offset, fsize_t length, void *userdata);
 
@@ -138,8 +138,8 @@ typedef struct
 /// <returns>0 for fail, nonzero for success.</returns>
 int avi_reader_init
 (
-	avi_reader* r,
-	void* userdata,
+	avi_reader *r,
+	void *userdata,
 	read_cb f_read,
 	seek_cb f_seek,
 	tell_cb f_tell,
