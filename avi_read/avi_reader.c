@@ -132,6 +132,9 @@ static void default_logprintf(void *userdata, const char* format, ...)
 	va_start(ap, format);
 	vprintf(format, ap);
 	va_end(ap);
+	(void)userdata;
+}
+
 }
 
 int avi_reader_init
