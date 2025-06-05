@@ -147,6 +147,17 @@ int avi_reader_init
 	avi_logprintf_level log_level
 );
 
+/// <summary>
+/// Get the specified stream reader to read the packets of the specified stream.
+/// </summary>
+/// <param name="r">A pointer to the `avi_reader` struct you had it initialized before.</param>
+/// <param name="stream_id">The stream index you want to </param>
+/// <param name="on_video_compressed">Your function to receive a compressed video packet.</param>
+/// <param name="on_video">Your function to receive an uncompressed video packet.</param>
+/// <param name="on_palette_change">Your function to receive a palette change event packet.</param>
+/// <param name="on_audio">Your function to receive an audio packet.</param>
+/// <param name="s_out">Your `avi_stream_reader` to be initialized.</param>
+/// <returns>0 for fail, nonzero for success.</returns>
 int avi_get_stream_reader
 (
 	avi_reader *r,
