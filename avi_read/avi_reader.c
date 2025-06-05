@@ -594,6 +594,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 	{
 		DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d using the indices from the AVI file." NL, packet_no + 1, stream_id);
 		if (!must_seek(r, r->idx_offset)) goto ErrRet;
+		fsize_t start_of_movi = r->stream_data_offset - 4;
 		avi_index_entry index;
 		for (fsize_t i = packet_no_avi; i < r->num_indices; i++)
 		{
@@ -604,10 +605,11 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
 			if (stream_no == stream_id)
 			{
-				DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIx32", Length = 0x%"PRIx32"." NL, packet_no, stream_id, index.dwOffset, index.dwSize);
+				fsize_t offset = index.dwOffset + start_of_movi;
+				DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no, stream_id, offset, index.dwSize);
 				s->cur_4cc = index.dwChunkId;
 				s->cur_packet_index = i;
-				s->cur_packet_offset = index.dwOffset;
+				s->cur_packet_offset = offset;
 				s->cur_packet_len = index.dwSize;
 				s->cur_stream_packet_index = packet_no + 1;
 				if (call_receive_functions)
