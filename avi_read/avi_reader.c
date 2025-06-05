@@ -360,7 +360,9 @@ int avi_reader_init
 				{
 					if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 					if (!memcmp(fourcc_buf, "rec ", 4))
-						r->stream_data_is_list_rec = 1;
+					{
+						INFO_PRINTF(r, "This AVI file uses `LIST(rec)` structure to store packets." NL);
+					}
 					else
 					{
 						FATAL_PRINTF(r, "Inside LIST(movi): expected LIST(rec), got LIST(%s)." NL, fourcc_buf);

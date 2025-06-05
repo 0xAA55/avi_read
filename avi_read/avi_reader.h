@@ -62,7 +62,6 @@ typedef struct
 	uint32_t num_streams;
 	avi_stream_info avi_stream_info[AVI_MAX_STREAMS];
 	fsize_t stream_data_offset;
-	int stream_data_is_list_rec;
 	fsize_t idx_offset;
 	fsize_t num_indices;
 }avi_reader;
