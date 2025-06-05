@@ -118,7 +118,8 @@ int avi_reader_init
 	read_cb f_read,
 	seek_cb f_seek,
 	tell_cb f_tell,
-	logprintf_cb f_logprintf
+	logprintf_cb f_logprintf,
+	avi_logprintf_level log_level
 )
 {
 	memset(r, 0, sizeof *r);
