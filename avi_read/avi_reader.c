@@ -201,7 +201,7 @@ int avi_reader_init
 	if (!must_tell(r, &avi_start)) goto ErrRet;
 	if (!must_match(r, "AVI ")) goto ErrRet;
 
-	size_t file_end = (size_t)avi_start + r->riff_len;
+	r->end_of_file = (size_t)avi_start + r->riff_len;
 	char fourcc_buf[5] = { 0 };
 	uint32_t chunk_size;
 	fsize_t end_of_chunk;
@@ -337,7 +337,7 @@ int avi_reader_init
 		}
 		if (!must_seek(r, end_of_chunk)) goto ErrRet;
 		got_all_we_need = r->num_streams && r->stream_data_offset && ((has_index && r->idx_offset) || !has_index);
-		if (end_of_chunk == file_end) break;
+		if (end_of_chunk == r->end_of_file) break;
 	}
 
 	return 1;
