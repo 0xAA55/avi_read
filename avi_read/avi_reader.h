@@ -169,4 +169,12 @@ int avi_get_stream_reader
 	avi_stream_reader *s_out
 );
 
+
+/// <summary>
+/// Move to the next packet, then call the callback functions for you to receive the packet.
+/// If you set `cur_packet_offset` to zero, then it will move to the first packet of the stream.
+/// </summary>
+/// <param name="s">Your stream reader</param>
+/// <returns>0 for fail, nonzero for success.</returns>
+int avi_stream_reader_move_to_next_packet(avi_stream_reader *s);
 #endif
