@@ -121,6 +121,21 @@ typedef struct
 	on_stream_data_cb on_audio;				/// Audio, it can be either compressed or uncompressed, depends on its format.
 }avi_stream_reader;
 
+/// <summary>
+/// Initialize the `avi_reader`. The callback functions will be used to parse the AVI file header.
+/// After parsed the AVI header, the struct `avi_reader` stores the information if the AVI file.
+/// e.g. How many streams inside it, what is the format of each stream, does this AVI file indexed.
+/// The next step to handle the AVI file is to call `avi_get_stream_reader()`, which creates the `avi_stream_reader` struct
+///   for you to handle each stream of the AVI file.
+/// </summary>
+/// <param name="r">Your `avi_reader` to be initialized.</param>
+/// <param name="userdata">Your data to pass to your callback functions.</param>
+/// <param name="f_read">Your `read()` function for me to read the AVI file.</param>
+/// <param name="f_seek">Your `seek()` function for me to change the absolute read position.</param>
+/// <param name="f_tell">Your `tell()` function for me to retrieve the current read position.</param>
+/// <param name="f_logprintf">Your `printf()` function for me to log. You can pass `NULL` and I will call `vprintf()` as the default behavior.</param>
+/// <param name="log_level">The log level, see `avi_logprintf_level`</param>
+/// <returns>0 for fail, nonzero for success.</returns>
 int avi_reader_init
 (
 	avi_reader* r,
