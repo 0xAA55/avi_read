@@ -63,10 +63,10 @@
 #define TCC_pc_ MAKE2CC_('p', 'c')
 #define TCC_wb_ MAKE2CC_('w', 'b')
 
-#define FATAL_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_FATAL) r->f_logprintf(r->userdata, "[FATAL] " ## fmt, __VA_ARGS__)
-#define WARN_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_WARN) r->f_logprintf(r->userdata, "[WARN] " ## fmt, __VA_ARGS__)
-#define INFO_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_INFO) r->f_logprintf(r->userdata, "[INFO] " ## fmt, __VA_ARGS__)
-#define DEBUG_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_DEBUG) r->f_logprintf(r->userdata, "[DEBUG] " ## fmt, __VA_ARGS__)
+#define FATAL_PRINTF(r, fmt, ...)	{if (r->log_level >= PRINT_FATAL) r->f_logprintf(r->userdata, "[FATAL] " ## fmt, __VA_ARGS__);}
+#define WARN_PRINTF(r, fmt, ...)	{if (r->log_level >= PRINT_WARN) r->f_logprintf(r->userdata, "[WARN] " ## fmt, __VA_ARGS__);}
+#define INFO_PRINTF(r, fmt, ...)	{if (r->log_level >= PRINT_INFO) r->f_logprintf(r->userdata, "[INFO] " ## fmt, __VA_ARGS__);}
+#define DEBUG_PRINTF(r, fmt, ...)	{if (r->log_level >= PRINT_DEBUG) r->f_logprintf(r->userdata, "[DEBUG] " ## fmt, __VA_ARGS__);}
 
 #ifdef _MSC_VER
 #  define NL "\n"
