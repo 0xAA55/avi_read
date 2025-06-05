@@ -31,7 +31,7 @@ typedef struct
 	fsize_t stream_additional_header_data_offset;
 	fsize_t stream_additional_header_data_len;
 	char stream_name[256];
-}avi_stream_data;
+}avi_stream_info;
 
 typedef fssize_t(*read_cb)(void* buffer, size_t len, void* userdata);
 typedef fssize_t(*seek_cb)(fsize_t offset, void* userdata);
@@ -60,7 +60,7 @@ typedef struct
 	fsize_t end_of_file;
 	avi_main_header avih;
 	uint32_t num_streams;
-	avi_stream_data avi_stream_data[AVI_MAX_STREAMS];
+	avi_stream_info avi_stream_info[AVI_MAX_STREAMS];
 	fsize_t stream_data_offset;
 	int stream_data_is_list_rec;
 	fsize_t idx_offset;
@@ -71,6 +71,7 @@ typedef struct
 {
 	avi_reader *r;
 	int stream_id;
+	avi_stream_info *stream_info;
 	uint32_t cur_4cc;
 	fsize_t cur_rec_list_offset;
 	fsize_t cur_rec_list_len;
