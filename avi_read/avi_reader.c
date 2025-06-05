@@ -391,11 +391,22 @@ ErrRet:
 	return 0;
 }
 
-int avi_get_stream
+static void default_on_stream_data_cb(fsize_t offset, fsize_t length, void *userdata)
+{
+	(void)offset;
+	(void)length;
+	(void)userdata;
+}
+
+int avi_get_stream_reader
 (
-	avi_reader* r,
+	avi_reader *r,
 	int stream_id,
-	avi_stream_reader* s_out
+	on_stream_data_cb on_video_compressed,
+	on_stream_data_cb on_video,
+	on_stream_data_cb on_palette_change,
+	on_stream_data_cb on_audio,
+	avi_stream_reader *s_out
 )
 {
 	void* userdata = NULL;
@@ -423,9 +434,20 @@ int avi_get_stream
 	}
 #endif
 
-	memset(s_out, 0, sizeof * s_out);
+	if (!on_video_compressed) on_video_compressed = default_on_stream_data_cb;
+	if (!on_video) on_video = default_on_stream_data_cb;
+	if (!on_palette_change) on_palette_change = default_on_stream_data_cb;
+	if (!on_audio) on_audio = default_on_stream_data_cb;
+
+	memset(s_out, 0, sizeof  *s_out);
 	s_out->r = r;
 	s_out->stream_id = stream_id;
+	s_out->stream_info = &r->avi_stream_info[stream_id];
+	s_out->cur_stream_packet_index = 0;
+	s_out->on_video_compressed = on_video_compressed;
+	s_out->on_video = on_video;
+	s_out->on_palette_change = on_palette_change;
+	s_out->on_audio = on_audio;
 	if (r->idx_offset && r->num_indices)
 	{
 		INFO_PRINTF(r, "Seeking the first packet of the stream %d using the indices from the AVI file." NL, stream_id);

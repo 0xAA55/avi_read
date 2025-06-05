@@ -38,6 +38,8 @@ typedef fssize_t(*seek_cb)(fsize_t offset, void* userdata);
 typedef fssize_t(*tell_cb)(void* userdata);
 typedef void (*logprintf_cb)(void* userdata, const char* fmt, ...);
 
+typedef void(*on_stream_data_cb)(fsize_t offset, fsize_t length, void *userdata);
+
 typedef enum
 {
 	PRINT_NOTHING = 0,
@@ -74,6 +76,10 @@ typedef struct
 	fsize_t cur_rec_list_len;
 	fsize_t cur_packet_offset;
 	fsize_t cur_packet_len;
+	on_stream_data_cb on_video_compressed;	/// Compressed video frame got
+	on_stream_data_cb on_video;				/// Uncompressed video frame (probably BMP) got
+	on_stream_data_cb on_palette_change;	/// Palette change for your video (If the AVI file is using color index as pixel data, the actual color in RGB form comes from the palette)
+	on_stream_data_cb on_audio;				/// Audio, it can be either compressed or uncompressed, depends on its format.
 }avi_stream_reader;
 
 int avi_reader_init
@@ -87,11 +93,15 @@ int avi_reader_init
 	avi_logprintf_level log_level
 );
 
-int avi_get_stream
+int avi_get_stream_reader
 (
-	avi_reader* r,
+	avi_reader *r,
 	int stream_id,
-	avi_stream_reader* s_out
+	on_stream_data_cb on_video_compressed,
+	on_stream_data_cb on_video,
+	on_stream_data_cb on_palette_change,
+	on_stream_data_cb on_audio,
+	avi_stream_reader *s_out
 );
 
 #endif
