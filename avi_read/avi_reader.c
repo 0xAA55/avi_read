@@ -535,7 +535,7 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 	r = s->r;
 	char fourcc_buf[5] = { 0 };
 	*(uint32_t*)fourcc_buf = s->cur_4cc;
-	switch (MATCH2CC(fourcc_buf)) // Avoid endianess handling
+	switch (MATCH2CC(&fourcc_buf[2])) // Avoid endianess handling
 	{
 	case TCC_db:
 	case TCC_db_:
@@ -553,6 +553,9 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 	case TCC_wb_:
 		s->on_audio(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
 		break;
+	default:
+		FATAL_PRINTF(r, "Unknown stream type: \"%s\"." NL, fourcc_buf);
+		goto ErrRet;
 	}
 	return 1;
 ErrRet:
