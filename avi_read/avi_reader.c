@@ -29,15 +29,10 @@
 
 #define MATCH4CC(str) (*(const uint32_t*)(str))
 #define MATCH2CC(str) (*(const uint16_t*)(str))
-#if   '\x01\x02\x03\x04' == 0x01020304
-#  define MAKE2CC(c1, c2) ((c1) | ((c2) << 8))
-#  define MAKE4CC(c1, c2, c3, c4) ((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
-#elif '\x01\x02\x03\x04' == 0x04030201
-#  define MAKE2CC(c2, c1) ((c1) | ((c2) << 8))
-#  define MAKE4CC(c4, c3, c2, c1) ((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
-#else
-#  error What's wrong with your compiler?
-#endif
+#define MAKE2CC(c1, c2) ((c1) | ((c2) << 8))
+#define MAKE4CC(c1, c2, c3, c4) ((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
+#define MAKE2CC_(c2, c1) ((c1) | ((c2) << 8))
+#define MAKE4CC_(c4, c3, c2, c1) ((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
 
 #define FCC_JUNK MAKE4CC('J', 'U', 'N', 'K')
 #define FCC_LIST MAKE4CC('L', 'I', 'S', 'T')
@@ -45,10 +40,28 @@
 #define FCC_avih MAKE4CC('a', 'v', 'i', 'h')
 #define FCC_movi MAKE4CC('m', 'o', 'v', 'i')
 #define FCC_idx1 MAKE4CC('i', 'd', 'x', '1')
+#define FCC_strh MAKE4CC('s', 't', 'r', 'h')
+#define FCC_strf MAKE4CC('s', 't', 'r', 'f')
+#define FCC_strd MAKE4CC('s', 't', 'r', 'd')
+#define FCC_strn MAKE4CC('s', 't', 'r', 'n')
+#define FCC_JUNK_ MAKE4CC_('J', 'U', 'N', 'K')
+#define FCC_LIST_ MAKE4CC_('L', 'I', 'S', 'T')
+#define FCC_hdrl_ MAKE4CC_('h', 'd', 'r', 'l')
+#define FCC_avih_ MAKE4CC_('a', 'v', 'i', 'h')
+#define FCC_movi_ MAKE4CC_('m', 'o', 'v', 'i')
+#define FCC_idx1_ MAKE4CC_('i', 'd', 'x', '1')
+#define FCC_strh_ MAKE4CC_('s', 't', 'r', 'h')
+#define FCC_strf_ MAKE4CC_('s', 't', 'r', 'f')
+#define FCC_strd_ MAKE4CC_('s', 't', 'r', 'd')
+#define FCC_strn_ MAKE4CC_('s', 't', 'r', 'n')
 #define TCC_db MAKE2CC('d', 'b')
 #define TCC_dc MAKE2CC('d', 'c')
 #define TCC_pc MAKE2CC('p', 'c')
 #define TCC_wb MAKE2CC('w', 'b')
+#define TCC_db_ MAKE2CC_('d', 'b')
+#define TCC_dc_ MAKE2CC_('d', 'c')
+#define TCC_pc_ MAKE2CC_('p', 'c')
+#define TCC_wb_ MAKE2CC_('w', 'b')
 
 #define FATAL_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_FATAL) r->f_logprintf(r->userdata, "[FATAL] " ## fmt, __VA_ARGS__)
 #define WARN_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_WARN) r->f_logprintf(r->userdata, "[WARN] " ## fmt, __VA_ARGS__)
@@ -233,13 +246,16 @@ int avi_reader_init
 		{
 		default:
 		case FCC_JUNK:
+		case FCC_JUNK_:
 			INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, fourcc_buf);
 			break;
 		case FCC_LIST:
+		case FCC_LIST_:
 			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 			switch (MATCH4CC(fourcc_buf))
 			{
 			case FCC_hdrl:
+			case FCC_hdrl_:
 				INFO_PRINTF(r, "Reading toplevel LIST chunk \"hdrl\"" NL);
 				do
 				{
@@ -260,6 +276,7 @@ int avi_reader_init
 						switch (MATCH4CC(h_fourcc_buf))
 						{
 						case FCC_avih:
+						case FCC_avih_:
 							if (avih_read)
 							{
 								FATAL_PRINTF(r, "AVI file format corrupted: duplicated main AVI header \"avih\"" NL);
@@ -272,6 +289,7 @@ int avi_reader_init
 							avih_read = 1;
 							break;
 						case FCC_LIST:
+						case FCC_LIST_:
 							INFO_PRINTF(r, "Reading the stream list" NL);
 							if (!must_match(r, "strl")) goto ErrRet;
 
@@ -331,6 +349,7 @@ int avi_reader_init
 							break;
 						default:
 						case FCC_JUNK:
+						case FCC_JUNK_:
 							INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, h_fourcc_buf);
 							break;
 						}
@@ -351,6 +370,7 @@ int avi_reader_init
 
 				break;
 			case FCC_movi:
+			case FCC_movi_:
 				INFO_PRINTF(r, "Reading toplevel LIST chunk \"movi\"" NL);
 				if (!must_tell(r, &r->stream_data_offset)) goto ErrRet;
 
@@ -473,10 +493,22 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 	*(uint32_t*)fourcc_buf = s->cur_4cc;
 	switch (MATCH2CC(fourcc_buf)) // Avoid endianess handling
 	{
-	case TCC_db: s->on_video(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
-	case TCC_dc: s->on_video_compressed(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
-	case TCC_pc: s->on_palette_change(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
-	case TCC_wb: s->on_audio(s->cur_packet_offset, s->cur_packet_len, s->r->userdata); break;
+	case TCC_db:
+	case TCC_db_:
+		s->on_video(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		break;
+	case TCC_dc:
+	case TCC_dc_:
+		s->on_video_compressed(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		break;
+	case TCC_pc:
+	case TCC_pc_:
+		s->on_palette_change(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		break;
+	case TCC_wb:
+	case TCC_wb_:
+		s->on_audio(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		break;
 	}
 	return 1;
 ErrRet:
