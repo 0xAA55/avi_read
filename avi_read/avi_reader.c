@@ -322,11 +322,18 @@ int avi_reader_init
 				INFO_PRINTF(r, "Reading toplevel LIST chunk \"movi\"\r\n");
 				if (!must_tell(r, &r->stream_data_offset)) goto ErrRet;
 
-				// Check if the AVI file uses LIST->rec pattern to store the packets
+				// Check if the AVI file uses LIST(rec) pattern to store the packets
 				if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 				if (!memcmp(fourcc_buf, "LIST", 4))
 				{
-					r->stream_data_is_lists = 1;
+					if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
+					if (!memcmp(fourcc_buf, "rec ", 4))
+						r->stream_data_is_list_rec = 1;
+					else
+					{
+						FATAL_PRINTF(r, "Inside LIST(movi): expected LIST(rec), got LIST(%s).\r\n", fourcc_buf);
+						goto ErrRet;
+					}
 				}
 				break;
 			case FCC_idx1:
