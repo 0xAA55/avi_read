@@ -74,6 +74,26 @@
 #  define NL "\r\n"
 #endif
 
+int avi_stream_is_video(avi_stream_info * si)
+{
+	return !memcmp(&si->stream_header.fccType, "vids", 4);
+}
+
+int avi_stream_is_audio(avi_stream_info* si)
+{
+	return !memcmp(&si->stream_header.fccType, "auds", 4);
+}
+
+int avi_stream_is_text(avi_stream_info* si)
+{
+	return !memcmp(&si->stream_header.fccType, "txts", 4);
+}
+
+int avi_stream_is_midi(avi_stream_info* si)
+{
+	return !memcmp(&si->stream_header.fccType, "mids", 4);
+}
+
 static int must_match(avi_reader *r, const char *fourcc)
 {
 	char buf[5] = { 0 };
