@@ -28,9 +28,12 @@
 #define AVIIF_COMPUSE       0x0FFF0000L // these bits are for compressor use
 
 #define MATCH4CC(str) (*(const uint32_t*)(str))
+#define MATCH2CC(str) (*(const uint16_t*)(str))
 #if   '\x01\x02\x03\x04' == 0x01020304
+#  define MAKE2CC(c1, c2) ((c1) | ((c2) << 8))
 #  define MAKE4CC(c1, c2, c3, c4) ((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
 #elif '\x01\x02\x03\x04' == 0x04030201
+#  define MAKE2CC(c2, c1) ((c1) | ((c2) << 8))
 #  define MAKE4CC(c4, c3, c2, c1) ((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
 #else
 #  error What's wrong with your compiler?
@@ -42,6 +45,10 @@
 #define FCC_avih MAKE4CC('a', 'v', 'i', 'h')
 #define FCC_movi MAKE4CC('m', 'o', 'v', 'i')
 #define FCC_idx1 MAKE4CC('i', 'd', 'x', '1')
+#define TCC_db MAKE2CC('d', 'b')
+#define TCC_dc MAKE2CC('d', 'c')
+#define TCC_pc MAKE2CC('p', 'c')
+#define TCC_wb MAKE2CC('w', 'b')
 
 #define FATAL_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_FATAL) r->f_logprintf(r->userdata, "[FATAL] " ## fmt, __VA_ARGS__)
 #define WARN_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_WARN) r->f_logprintf(r->userdata, "[WARN] " ## fmt, __VA_ARGS__)
