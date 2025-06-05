@@ -15,6 +15,15 @@
 #define AVIF_WASCAPTUREFILE	0x00010000
 #define AVIF_COPYRIGHTED	0x00020000
 
+/* Flags for index */
+#define AVIIF_LIST          0x00000001L // chunk is a 'LIST'
+#define AVIIF_KEYFRAME      0x00000010L // this frame is a key frame.
+#define AVIIF_FIRSTPART     0x00000020L // this frame is the start of a partial frame.
+#define AVIIF_LASTPART      0x00000040L // this frame is the end of a partial frame.
+#define AVIIF_MIDPART       (AVIIF_LASTPART|AVIIF_FIRSTPART)
+
+#define AVIIF_NOTIME	    0x00000100L // this frame doesn't take any time
+#define AVIIF_COMPUSE       0x0FFF0000L // these bits are for compressor use
 static int must_match(avi_reader* r, const char* fourcc)
 {
 	char buf[5] = { 0 };
