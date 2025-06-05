@@ -318,57 +318,74 @@ int avi_reader_init
 							INFO_PRINTF(r, "Reading the stream list" NL);
 							if (!must_match(r, "strl")) goto ErrRet;
 
+							fsize_t string_len = 0;
+							uint32_t stream_id = r->num_streams;
+							if (stream_id >= AVI_MAX_STREAMS)
+							{
+								FATAL_PRINTF(r, "Too many streams in the AVI file, max supported streams is %d" NL, AVI_MAX_STREAMS);
+								goto ErrRet;
+							}
+							avi_stream_info* stream_data = &r->avi_stream_info[r->num_streams++];
+							const fsize_t max_string_len = AVI_MAX_STREAM_NAME - 1;
+
+							char strl_fourcc[5] = { 0 };
+							uint32_t strl_chunk_size = 0;
+							fsize_t strl_chunk_pos;
+							fsize_t strl_end_of_chunk;
 							do
 							{
-								if (r->num_streams < AVI_MAX_STREAMS)
+								if (!must_read(r, strl_fourcc, 4)) goto ErrRet;
+								if (!must_read(r, &strl_chunk_size, 4)) goto ErrRet;
+								if (!must_tell(r, &strl_chunk_pos)) goto ErrRet;
+								strl_end_of_chunk = strl_chunk_pos + strl_chunk_size;
+								switch (MATCH4CC(strl_fourcc))
 								{
-									uint32_t sub_chunk_len;
-									uint32_t stream_id = r->num_streams;
-									avi_stream_info *stream_data = &r->avi_stream_info[r->num_streams++];
-									memset(stream_data, 0, sizeof *stream_data);
-									size_t string_len = (sizeof stream_data->stream_name) - 1;
-									if (!must_match(r, "strh")) goto ErrRet;
-									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
-									if (!must_read(r, &stream_data->stream_header, sub_chunk_len)) goto ErrRet;
-									if (!must_match(r, "strf")) goto ErrRet;
-									if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
+								default:
+								case FCC_JUNK:
+								case FCC_JUNK_:
+									INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, strl_fourcc);
+									break;
+								case FCC_strh:
+								case FCC_strh_:
+									INFO_PRINTF(r, "Reading the stream header for stream id %u" NL, stream_id);
+									if (!must_read(r, &stream_data->stream_header, strl_chunk_size)) goto ErrRet;
+									string_len = (sizeof stream_data->stream_name) - 1;
+									break;
+								case FCC_strf:
+								case FCC_strf_:
+									INFO_PRINTF(r, "Reading the stream format for stream id %u" NL, stream_id);
 									if (!must_tell(r, &stream_data->stream_format_offset)) goto ErrRet;
-									stream_data->stream_format_len = sub_chunk_len;
-									if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
-									if (must_match(r, "strd"))
-									{
-										if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
-										if (!must_tell(r, &stream_data->stream_additional_header_data_offset)) goto ErrRet;
-										stream_data->stream_additional_header_data_len = sub_chunk_len;
-										if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
-									}
-									if (must_match(r, "strn"))
-									{
-										if (!must_read(r, &sub_chunk_len, 4)) goto ErrRet;
-										if (string_len > sub_chunk_len) string_len = sub_chunk_len;
-										if (!must_read(r, &stream_data->stream_name, string_len)) goto ErrRet;
-										if (!rel_seek(r, sub_chunk_len)) goto ErrRet;
-									}
-									else
-									{
-										string_len = 0;
-									}
+									stream_data->stream_format_len = strl_chunk_size;
+									break;
+								case FCC_strd:
+								case FCC_strd_:
+									INFO_PRINTF(r, "Reading the stream additional header data for stream id %u" NL, stream_id);
+									if (!must_tell(r, &stream_data->stream_additional_header_data_offset)) goto ErrRet;
+									stream_data->stream_additional_header_data_len = strl_chunk_size;
+									break;
+								case FCC_strn:
+								case FCC_strn_:
+									INFO_PRINTF(r, "Reading the stream name for stream id %u" NL, stream_id);
+									string_len = strl_chunk_size;
+									if (string_len > max_string_len) string_len = max_string_len;
+									if (!must_read(r, &stream_data->stream_name, string_len)) goto ErrRet;
+									break;
+								}
+								if (!must_seek(r, strl_end_of_chunk)) goto ErrRet;
+							} while (strl_end_of_chunk < hdrl_end_of_chunk);
 
-									char fourcc_type[5] = { 0 };
-									char fourcc_handler[5] = { 0 };
-									*(uint32_t*)fourcc_type = stream_data->stream_header.fccType;
-									*(uint32_t*)fourcc_handler = stream_data->stream_header.fccHandler;
-									if (!string_len)
-										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\"" NL, stream_id, fourcc_type, fourcc_handler);
-									else
-										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\", Name: %s" NL, stream_id, fourcc_type, fourcc_handler, stream_data->stream_name);
-								}
-								else
-								{
-									FATAL_PRINTF(r, "Too many streams in the AVI file, max supported streams is %d" NL, AVI_MAX_STREAMS);
-									goto ErrRet;
-								}
-							} while (0);
+							char fourcc_type[5] = { 0 };
+							char fourcc_handler[5] = { 0 };
+							*(uint32_t*)fourcc_type = stream_data->stream_header.fccType;
+							*(uint32_t*)fourcc_handler = stream_data->stream_header.fccHandler;
+							if (!string_len)
+							{
+								INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\"" NL, stream_id, fourcc_type, fourcc_handler);
+							}
+							else
+							{
+								INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\", Name: %s" NL, stream_id, fourcc_type, fourcc_handler, stream_data->stream_name);
+							}
 
 							strl_read++;
 							break;
