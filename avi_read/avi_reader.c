@@ -36,6 +36,13 @@
 #  error What's wrong with your compiler?
 #endif
 
+#define FCC_JUNK MAKE4CC('J', 'U', 'N', 'K')
+#define FCC_LIST MAKE4CC('L', 'I', 'S', 'T')
+#define FCC_hdrl MAKE4CC('h', 'd', 'r', 'l')
+#define FCC_avih MAKE4CC('a', 'v', 'i', 'h')
+#define FCC_movi MAKE4CC('m', 'o', 'v', 'i')
+#define FCC_idx1 MAKE4CC('i', 'd', 'x', '1')
+
 static int must_match(avi_reader* r, const char* fourcc)
 {
 	char buf[5] = { 0 };
