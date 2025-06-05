@@ -55,6 +55,7 @@ typedef struct
 	fsize_t stream_data_offset;
 	int stream_data_is_lists;
 	fsize_t idx_offset;
+	fsize_t num_indices;
 }avi_reader;
 
 typedef struct

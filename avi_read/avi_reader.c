@@ -332,6 +332,7 @@ int avi_reader_init
 			case FCC_idx1:
 				INFO_PRINTF(r, "Reading toplevel chunk \"idx1\"\r\n");
 				if (!must_tell(r, &r->idx_offset)) goto ErrRet;
+				r->num_indices = chunk_size / sizeof(avi_index_entry);
 				break;
 			}
 		}
