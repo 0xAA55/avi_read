@@ -447,9 +447,51 @@ int avi_get_stream
 	}
 	else
 	{
+		INFO_PRINTF(r, "Seeking the first packet of the stream %d via file traversal." NL, stream_id);
+		if (!must_seek(r, r->stream_data_offset)) goto ErrRet;
 
+		char fourcc_buf[5] = { 0 };
+		uint32_t chunk_size;
+		fsize_t chunk_start = 0;
+		fsize_t chunk_end = 0;
+		do
+		{
+			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
+			if (!must_read(r, &chunk_size, 4)) goto ErrRet;
+			if (!must_tell(r, &chunk_start)) goto ErrRet;
+			chunk_end = chunk_start + chunk_size;
 
-
+			if (!memcmp(fourcc_buf, "LIST", 4))
+			{
+				if (!must_match(r, "rec ")) goto ErrRet;
+				DEBUG_PRINTF(r, "Seeking into a LIST(rec) chunk." NL);
+				s_out->cur_rec_list_offset = chunk_start + 4;
+				s_out->cur_rec_list_len = chunk_size - 4;
+				// Move inside the LIST chunk to find the packet.
+				continue; // Not to skip the chunk.
+			}
+			else
+			{
+				int stream_no;
+				if (sscanf(fourcc_buf, "%d", &stream_no) != 1)
+				{
+					WARN_PRINTF(r, "Encountering unknown FourCC \"%s\" while seeking for a packet, skipping." NL, fourcc_buf);
+				}
+				else if (stream_no == stream_id)
+				{
+					INFO_PRINTF(r, "Successfully found the first packet of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, stream_id, chunk_start, chunk_size);
+					s_out->cur_packet_offset = chunk_start;
+					s_out->cur_packet_len = chunk_size;
+					break;
+				}
+			}
+			if (!must_seek(r, chunk_end)) goto ErrRet;
+		} while (chunk_end < r->end_of_file);
+		if (!s_out->cur_packet_offset || !s_out->cur_packet_len)
+		{
+			FATAL_PRINTF(r, "No first packet found for stream id %d after full file traversal." NL, stream_id);
+			goto ErrRet;
+		}
 	}
 
 	return 1;
