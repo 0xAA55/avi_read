@@ -21,7 +21,7 @@ static int must_match(avi_reader* r, const char* fourcc)
 	if (r->f_read(buf, 4, r->userdata) != 4) return 0;
 	if (memcmp(buf, fourcc, 4))
 	{
-		r->logprintf(r->userdata, "[ERROR] Matching FourCC failed: %s != %s\r\n", buf, fourcc);
+		r->f_logprintf(r->userdata, "[ERROR] Matching FourCC failed: %s != %s\r\n", buf, fourcc);
 		return 0;
 	}
 	return 1;
@@ -32,12 +32,12 @@ static int must_read(avi_reader* r, void* buffer, size_t len)
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
 	if (rl < 0)
 	{
-		r->logprintf(r->userdata, "[ERROR] Read %u bytes failed.\r\n", (unsigned int)len);
+		r->f_logprintf(r->userdata, "[ERROR] Read %u bytes failed.\r\n", (unsigned int)len);
 		return 0;
 	}
 	else if (rl != len)
 	{
-		r->logprintf(r->userdata, "[ERROR] Tried to read %u bytes, got %u bytes.\r\n", (unsigned int)len, (unsigned int)rl);
+		r->f_logprintf(r->userdata, "[ERROR] Tried to read %u bytes, got %u bytes.\r\n", (unsigned int)len, (unsigned int)rl);
 		return 0;
 	}
 	else
@@ -51,7 +51,7 @@ static int must_tell(avi_reader* r, fsize_t* cur_pos)
 	fssize_t told = r->f_tell(r->userdata);
 	if (told < 0)
 	{
-		r->logprintf(r->userdata, "[ERROR] `f_tell()` failed.\r\n");
+		r->f_logprintf(r->userdata, "[ERROR] `f_tell()` failed.\r\n");
 		return 0;
 	}
 	else
@@ -66,7 +66,7 @@ static int must_seek(avi_reader* r, fsize_t target)
 	fssize_t told = r->f_seek(target, r->userdata);
 	if (told < 0)
 	{
-		r->logprintf(r->userdata, "[ERROR] `f_seek(%x)` failed.\r\n", target);
+		r->f_logprintf(r->userdata, "[ERROR] `f_seek(%x)` failed.\r\n", target);
 		return 0;
 	}
 	else
@@ -80,14 +80,14 @@ static int rel_seek(avi_reader* r, fssize_t offset)
 	fssize_t cur_pos = r->f_tell(r->userdata);
 	if (cur_pos < 0)
 	{
-		r->logprintf(r->userdata, "[ERROR] `f_tell()` failed.\r\n");
+		r->f_logprintf(r->userdata, "[ERROR] `f_tell()` failed.\r\n");
 		return 0;
 	}
 	fsize_t target = (fsize_t)(cur_pos + offset);
 	cur_pos = r->f_seek(target, r->userdata);
 	if (cur_pos < 0)
 	{
-		r->logprintf(r->userdata, "[ERROR] `f_seek(%x)` failed.\r\n", target);
+		r->f_logprintf(r->userdata, "[ERROR] `f_seek(%x)` failed.\r\n", target);
 		return 0;
 	}
 	return 1;
@@ -105,20 +105,20 @@ int avi_reader_init
 (
 	avi_reader* r,
 	void* userdata,
-	fssize_t(*f_read)(void* buffer, size_t len, void* userdata),
-	fssize_t(*f_seek)(fsize_t offset, void* userdata),
-	fssize_t(*f_tell)(void* userdata),
-	void(*logprintf)(void* userdata, const char* fmt, ...)
+	read_cb f_read,
+	seek_cb f_seek,
+	tell_cb f_tell,
+	logprintf_cb f_logprintf
 )
 {
 	memset(r, 0, sizeof *r);
-	if (!logprintf) logprintf = default_logprintf;
+	if (!f_logprintf) f_logprintf = default_logprintf;
 
 	r->userdata = userdata;
 	r->f_read = f_read;
 	r->f_seek = f_seek;
 	r->f_tell = f_tell;
-	r->logprintf = logprintf;
+	r->f_logprintf = f_logprintf;
 
 	if (!must_match(r, "RIFF")) goto ErrRet;
 	if (!must_read(r, &r->riff_len, 4)) goto ErrRet;
@@ -146,14 +146,14 @@ int avi_reader_init
 		{
 		default:
 		case MAKE4CC('J', 'U', 'N', 'K'):
-			logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", fourcc_buf);
+			f_logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", fourcc_buf);
 			break;
 		case MAKE4CC('L', 'I', 'S', 'T'):
 			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 			switch (MATCH4CC(fourcc_buf))
 			{
 			case MAKE4CC('h', 'd', 'r', 'l'):
-				logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"hdrl\"\r\n");
+				f_logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"hdrl\"\r\n");
 				do
 				{
 					fsize_t end_of_hdrl = end_of_chunk;
@@ -175,17 +175,17 @@ int avi_reader_init
 						case MAKE4CC('a', 'v', 'i', 'h'):
 							if (avih_read)
 							{
-								logprintf(userdata, "[ERROR] AVI file format corrupted: duplicated main AVI header \"avih\"\r\n");
+								f_logprintf(userdata, "[ERROR] AVI file format corrupted: duplicated main AVI header \"avih\"\r\n");
 								goto ErrRet;
 							}
-							logprintf(userdata, "[INFO] Reading the main AVI header \"avih\"\r\n");
+							f_logprintf(userdata, "[INFO] Reading the main AVI header \"avih\"\r\n");
 							r->avih.cb = h_chunk_size;
 							if (!must_read(r, &(&(r->avih.cb))[1], r->avih.cb)) goto ErrRet;
 							has_index = (r->avih.dwFlags & AVIF_HASINDEX) == AVIF_HASINDEX;
 							avih_read = 1;
 							break;
 						case MAKE4CC('L', 'I', 'S', 'T'):
-							logprintf(userdata, "[INFO] Reading the stream list\r\n");
+							f_logprintf(userdata, "[INFO] Reading the stream list\r\n");
 							if (!must_match(r, "strl")) goto ErrRet;
 
 							do
@@ -216,7 +216,7 @@ int avi_reader_init
 								}
 								else
 								{
-									logprintf(userdata, "[ERROR] Too many streams in the AVI file, must supported streams is %d\r\n", AVI_MAX_STREAMS);
+									f_logprintf(userdata, "[ERROR] Too many streams in the AVI file, must supported streams is %d\r\n", AVI_MAX_STREAMS);
 									goto ErrRet;
 								}
 							} while (0);
@@ -225,7 +225,7 @@ int avi_reader_init
 							break;
 						default:
 						case MAKE4CC('J', 'U', 'N', 'K'):
-							logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", h_fourcc_buf);
+							f_logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", h_fourcc_buf);
 							break;
 						}
 						if (!must_seek(r, h_end_of_chunk)) goto ErrRet;
@@ -233,19 +233,19 @@ int avi_reader_init
 					if (!must_seek(r, end_of_hdrl)) goto ErrRet;
 					if (!avih_read)
 					{
-						logprintf(userdata, "[ERROR] Missing main AVI header \"avih\"\r\n");
+						f_logprintf(userdata, "[ERROR] Missing main AVI header \"avih\"\r\n");
 						goto ErrRet;
 					}
 					if (!strl_read)
 					{
-						logprintf(userdata, "[ERROR] No stream found in the AVI file.\r\n");
+						f_logprintf(userdata, "[ERROR] No stream found in the AVI file.\r\n");
 						goto ErrRet;
 					}
 				} while (0);
 
 				break;
 			case MAKE4CC('m', 'o', 'v', 'i'):
-				logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"movi\"\r\n");
+				f_logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"movi\"\r\n");
 				if (!must_tell(r, &r->stream_data_offset)) goto ErrRet;
 
 				// Check if the AVI file uses LIST->rec pattern to store the packets
@@ -256,7 +256,7 @@ int avi_reader_init
 				}
 				break;
 			case MAKE4CC('i', 'd', 'x', '1'):
-				logprintf(userdata, "[INFO] Reading toplevel chunk \"idx1\"\r\n");
+				f_logprintf(userdata, "[INFO] Reading toplevel chunk \"idx1\"\r\n");
 				if (!must_tell(r, &r->idx_offset)) goto ErrRet;
 				break;
 			}
@@ -268,7 +268,7 @@ int avi_reader_init
 
 	return 1;
 ErrRet:
-	logprintf(userdata, "[FATAL] Reading AVI file failed.\r\n");
+	f_logprintf(userdata, "[FATAL] Reading AVI file failed.\r\n");
 	return 0;
 }
 
