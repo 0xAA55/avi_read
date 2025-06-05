@@ -411,19 +411,15 @@ int avi_get_stream_reader
 	avi_stream_reader *s_out
 )
 {
-	void* userdata = NULL;
-	logprintf_cb logprintf = default_logprintf;
 #if AVI_ROBUSTINESS
 	if (!r)
 	{
-		avi_reader fake_r = create_only_for_printf(logprintf, PRINT_FATAL, userdata);
+		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
 		r = &fake_r;
 		FATAL_PRINTF(r, "Param `avi_reader* r` must not be NULL. You get your stream from what?" NL);
 		r = NULL;
 		goto ErrRet;
 	}
-	userdata = r->userdata;
-	logprintf = r->f_logprintf;
 	if (stream_id >= (int)r->num_streams)
 	{
 		FATAL_PRINTF(r, "Bad stream id `%d` (Max: `%u`)" NL, stream_id, r->num_streams);
