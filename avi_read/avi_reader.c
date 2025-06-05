@@ -135,6 +135,14 @@ static void default_logprintf(void *userdata, const char* format, ...)
 	(void)userdata;
 }
 
+static avi_reader create_only_for_printf(logprintf_cb f_logprintf, avi_logprintf_level log_level, void *userdata)
+{
+	avi_reader fake_r;
+	memset(&fake_r, 0, sizeof fake_r);
+	fake_r.f_logprintf = f_logprintf;
+	fake_r.userdata = userdata;
+	fake_r.log_level = log_level;
+	return fake_r;
 }
 
 int avi_reader_init
