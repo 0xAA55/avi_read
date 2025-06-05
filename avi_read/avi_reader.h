@@ -191,6 +191,6 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
 /// </summary>
 /// <param name="s">Your stream reader</param>
 /// <returns>0 for fail, nonzero for success.</returns>
-int avi_stream_reader_move_to_next_packet(avi_stream_reader *s);
+int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions);
 
 #endif
