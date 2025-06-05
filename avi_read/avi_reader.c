@@ -377,6 +377,7 @@ int avi_reader_init
 				break;
 			}
 		}
+		// Skip the current chunk
 		if (!must_seek(r, end_of_chunk)) goto ErrRet;
 		got_all_we_need = r->num_streams && r->stream_data_offset && ((has_index && r->idx_offset) || !has_index);
 		if (end_of_chunk == r->end_of_file) break;

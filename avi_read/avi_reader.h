@@ -49,20 +49,42 @@ typedef enum
 	PRINT_DEBUG = 4,
 }avi_logprintf_level;
 
+/// <summary>
+/// The core struct of this library, stores the critical informations about the AVI file.
+/// With this struct initialized by calling `avi_reader_init()`, you can then extract packets from each stream of the AVI file.
+/// </summary>
 typedef struct
 {
-	void* userdata;
-	read_cb f_read;
-	seek_cb f_seek;
-	tell_cb f_tell;
+	void *userdata; /// The data to pass to your callback functions.
+	read_cb f_read; /// Your `read()` callback function pointer.
+	seek_cb f_seek; /// Your `seek()` callback function pointer.
+	tell_cb f_tell; /// Your `tell()` callback function pointer.
+
+	/// Your `printf()` callback function pointer.
 	logprintf_cb f_logprintf;
+
+	/// The log level, see `avi_logprintf_level`
 	avi_logprintf_level log_level;
+
+	/// The position of the end of the AVI file.
 	fsize_t end_of_file;
+
+	/// The AVI main header.
 	avi_main_header avih;
+
+	/// Number of streams inside the AVI file.
 	uint32_t num_streams;
+
+	/// AVI stream header data.
 	avi_stream_info avi_stream_info[AVI_MAX_STREAMS];
+
+	/// The offset to the AVI file's "body".
 	fsize_t stream_data_offset;
+
+	/// The `idx1` chunk offset. If the AVI file has an `idx1` chunk, seeking in this AVI file would be very fast and cheap.
 	fsize_t idx_offset;
+
+	/// Number of entries in the `idx1` chunk.
 	fsize_t num_indices;
 }avi_reader;
 
