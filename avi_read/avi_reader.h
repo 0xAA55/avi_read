@@ -79,8 +79,11 @@ int avi_reader_init
 	avi_logprintf_level log_level
 );
 
-
-
-
+int avi_get_stream
+(
+	avi_reader* r,
+	int stream_id,
+	avi_stream_reader* s_out
+);
 
 #endif
