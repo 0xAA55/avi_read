@@ -48,13 +48,19 @@
 #define INFO_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_INFO) r->f_logprintf(r->userdata, "[INFO] " ## fmt, __VA_ARGS__)
 #define DEBUG_PRINTF(r, fmt, ...)	if (r->log_level >= PRINT_DEBUG) r->f_logprintf(r->userdata, "[DEBUG] " ## fmt, __VA_ARGS__)
 
+#ifdef _MSC_VER
+#  define NL "\n"
+#else
+#  define NL "\r\n"
+#endif
+
 static int must_match(avi_reader* r, const char* fourcc)
 {
 	char buf[5] = { 0 };
 	if (r->f_read(buf, 4, r->userdata) != 4) return 0;
 	if (memcmp(buf, fourcc, 4))
 	{
-		FATAL_PRINTF(r, "Matching FourCC failed: %s != %s\r\n", buf, fourcc);
+		FATAL_PRINTF(r, "Matching FourCC failed: %s != %s" NL, buf, fourcc);
 		return 0;
 	}
 	return 1;
@@ -65,12 +71,12 @@ static int must_read(avi_reader* r, void* buffer, size_t len)
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
 	if (rl < 0)
 	{
-		FATAL_PRINTF(r, "Read %u bytes failed.\r\n", (unsigned int)len);
+		FATAL_PRINTF(r, "Read %u bytes failed." NL, (unsigned int)len);
 		return 0;
 	}
 	else if (rl != len)
 	{
-		FATAL_PRINTF(r, "Tried to read %u bytes, got %u bytes.\r\n", (unsigned int)len, (unsigned int)rl);
+		FATAL_PRINTF(r, "Tried to read %u bytes, got %u bytes." NL, (unsigned int)len, (unsigned int)rl);
 		return 0;
 	}
 	else
@@ -84,7 +90,7 @@ static int must_tell(avi_reader* r, fsize_t* cur_pos)
 	fssize_t told = r->f_tell(r->userdata);
 	if (told < 0)
 	{
-		FATAL_PRINTF(r, "`f_tell()` failed.\r\n");
+		FATAL_PRINTF(r, "`f_tell()` failed." NL);
 		return 0;
 	}
 	else
@@ -99,7 +105,7 @@ static int must_seek(avi_reader* r, fsize_t target)
 	fssize_t told = r->f_seek(target, r->userdata);
 	if (told < 0)
 	{
-		FATAL_PRINTF(r, "`f_seek(%x)` failed.\r\n", target);
+		FATAL_PRINTF(r, "`f_seek(%x)` failed." NL, target);
 		return 0;
 	}
 	else
@@ -113,14 +119,14 @@ static int rel_seek(avi_reader* r, fssize_t offset)
 	fssize_t cur_pos = r->f_tell(r->userdata);
 	if (cur_pos < 0)
 	{
-		FATAL_PRINTF(r, "`f_tell()` failed.\r\n");
+		FATAL_PRINTF(r, "`f_tell()` failed." NL);
 		return 0;
 	}
 	fsize_t target = (fsize_t)(cur_pos + offset);
 	cur_pos = r->f_seek(target, r->userdata);
 	if (cur_pos < 0)
 	{
-		FATAL_PRINTF(r, "`f_seek(%x)` failed.\r\n", target);
+		FATAL_PRINTF(r, "`f_seek(%x)` failed." NL, target);
 		return 0;
 	}
 	return 1;
@@ -162,7 +168,7 @@ int avi_reader_init
 	{
 		avi_reader fake_r = create_only_for_printf(f_logprintf, log_level, userdata);
 		r = &fake_r;
-		FATAL_PRINTF(r, "Invalid parameter : `avi_reader* r` must not be NULL.\r\n");
+		FATAL_PRINTF(r, "Invalid parameter : `avi_reader* r` must not be NULL." NL);
 		r = NULL;
 		goto ErrRet;
 	}
@@ -179,17 +185,17 @@ int avi_reader_init
 #if AVI_ROBUSTINESS
 	if (!f_read)
 	{
-		FATAL_PRINTF(r, "Invalid parameter: must provide your `read_cb` implementation.\r\n");
+		FATAL_PRINTF(r, "Invalid parameter: must provide your `read_cb` implementation." NL);
 		goto ErrRet;
 	}
 	if (!f_seek)
 	{
-		FATAL_PRINTF(r, "Invalid parameter : must provide your `seek_cb` implementation.\r\n");
+		FATAL_PRINTF(r, "Invalid parameter : must provide your `seek_cb` implementation." NL);
 		goto ErrRet;
 	}
 	if (!f_tell)
 	{
-		FATAL_PRINTF(r, "Invalid parameter: must provide your `tell_cb` implementation.\r\n");
+		FATAL_PRINTF(r, "Invalid parameter: must provide your `tell_cb` implementation." NL);
 		goto ErrRet;
 	}
 #endif
@@ -220,14 +226,14 @@ int avi_reader_init
 		{
 		default:
 		case FCC_JUNK:
-			INFO_PRINTF(r, "Skipping chunk \"%s\"\r\n", fourcc_buf);
+			INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, fourcc_buf);
 			break;
 		case FCC_LIST:
 			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 			switch (MATCH4CC(fourcc_buf))
 			{
 			case FCC_hdrl:
-				INFO_PRINTF(r, "Reading toplevel LIST chunk \"hdrl\"\r\n");
+				INFO_PRINTF(r, "Reading toplevel LIST chunk \"hdrl\"" NL);
 				do
 				{
 					fsize_t end_of_hdrl = end_of_chunk;
@@ -249,17 +255,17 @@ int avi_reader_init
 						case FCC_avih:
 							if (avih_read)
 							{
-								FATAL_PRINTF(r, "AVI file format corrupted: duplicated main AVI header \"avih\"\r\n");
+								FATAL_PRINTF(r, "AVI file format corrupted: duplicated main AVI header \"avih\"" NL);
 								goto ErrRet;
 							}
-							INFO_PRINTF(r, "Reading the main AVI header \"avih\"\r\n");
+							INFO_PRINTF(r, "Reading the main AVI header \"avih\"" NL);
 							r->avih.cb = h_chunk_size;
 							if (!must_read(r, &(&(r->avih.cb))[1], r->avih.cb)) goto ErrRet;
 							has_index = (r->avih.dwFlags & AVIF_HASINDEX) == AVIF_HASINDEX;
 							avih_read = 1;
 							break;
 						case FCC_LIST:
-							INFO_PRINTF(r, "Reading the stream list\r\n");
+							INFO_PRINTF(r, "Reading the stream list" NL);
 							if (!must_match(r, "strl")) goto ErrRet;
 
 							do
@@ -303,13 +309,13 @@ int avi_reader_init
 									*(uint32_t*)fourcc_type = stream_data->stream_header.fccType;
 									*(uint32_t*)fourcc_handler = stream_data->stream_header.fccHandler;
 									if (!string_len)
-										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\"\r\n", stream_id, fourcc_type, fourcc_handler);
+										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\"" NL, stream_id, fourcc_type, fourcc_handler);
 									else
-										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\", Name: %s\r\n", stream_id, fourcc_type, fourcc_handler, stream_data->stream_name);
+										INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\", Name: %s" NL, stream_id, fourcc_type, fourcc_handler, stream_data->stream_name);
 								}
 								else
 								{
-									FATAL_PRINTF(r, "Too many streams in the AVI file, max supported streams is %d\r\n", AVI_MAX_STREAMS);
+									FATAL_PRINTF(r, "Too many streams in the AVI file, max supported streams is %d" NL, AVI_MAX_STREAMS);
 									goto ErrRet;
 								}
 							} while (0);
@@ -318,7 +324,7 @@ int avi_reader_init
 							break;
 						default:
 						case FCC_JUNK:
-							INFO_PRINTF(r, "Skipping chunk \"%s\"\r\n", h_fourcc_buf);
+							INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, h_fourcc_buf);
 							break;
 						}
 						if (!must_seek(r, h_end_of_chunk)) goto ErrRet;
@@ -326,19 +332,19 @@ int avi_reader_init
 					if (!must_seek(r, end_of_hdrl)) goto ErrRet;
 					if (!avih_read)
 					{
-						FATAL_PRINTF(r, "Missing main AVI header \"avih\"\r\n");
+						FATAL_PRINTF(r, "Missing main AVI header \"avih\"" NL);
 						goto ErrRet;
 					}
 					if (!strl_read)
 					{
-						FATAL_PRINTF(r, "No stream found in the AVI file.\r\n");
+						FATAL_PRINTF(r, "No stream found in the AVI file." NL);
 						goto ErrRet;
 					}
 				} while (0);
 
 				break;
 			case FCC_movi:
-				INFO_PRINTF(r, "Reading toplevel LIST chunk \"movi\"\r\n");
+				INFO_PRINTF(r, "Reading toplevel LIST chunk \"movi\"" NL);
 				if (!must_tell(r, &r->stream_data_offset)) goto ErrRet;
 
 				// Check if the AVI file uses LIST(rec) pattern to store the packets
@@ -350,13 +356,13 @@ int avi_reader_init
 						r->stream_data_is_list_rec = 1;
 					else
 					{
-						FATAL_PRINTF(r, "Inside LIST(movi): expected LIST(rec), got LIST(%s).\r\n", fourcc_buf);
+						FATAL_PRINTF(r, "Inside LIST(movi): expected LIST(rec), got LIST(%s)." NL, fourcc_buf);
 						goto ErrRet;
 					}
 				}
 				break;
 			case FCC_idx1:
-				INFO_PRINTF(r, "Reading toplevel chunk \"idx1\"\r\n");
+				INFO_PRINTF(r, "Reading toplevel chunk \"idx1\"" NL);
 				if (!must_tell(r, &r->idx_offset)) goto ErrRet;
 				r->num_indices = chunk_size / sizeof(avi_index_entry);
 				break;
@@ -369,12 +375,12 @@ int avi_reader_init
 
 	if (!r->idx_offset)
 	{
-		WARN_PRINTF(r, "No AVI index: per-stream seeking requires per-packet file traversal.\r\n");
+		WARN_PRINTF(r, "No AVI index: per-stream seeking requires per-packet file traversal." NL);
 	}
 
 	return 1;
 ErrRet:
-	if (r) FATAL_PRINTF(r, "Reading AVI file failed.\r\n");
+	if (r) FATAL_PRINTF(r, "Reading AVI file failed." NL);
 	return 0;
 }
 
@@ -392,7 +398,7 @@ int avi_get_stream
 	{
 		avi_reader fake_r = create_only_for_printf(logprintf, PRINT_FATAL, userdata);
 		r = &fake_r;
-		FATAL_PRINTF(r, "Param `avi_reader* r` must not be NULL. You get your stream from what?\r\n");
+		FATAL_PRINTF(r, "Param `avi_reader* r` must not be NULL. You get your stream from what?" NL);
 		r = NULL;
 		goto ErrRet;
 	}
@@ -400,12 +406,12 @@ int avi_get_stream
 	logprintf = r->f_logprintf;
 	if (stream_id >= (int)r->num_streams)
 	{
-		FATAL_PRINTF(r, "Bad stream id `%d` (Max: `%u`)\r\n", stream_id, r->num_streams);
+		FATAL_PRINTF(r, "Bad stream id `%d` (Max: `%u`)" NL, stream_id, r->num_streams);
 		goto ErrRet;
 	}
 	if (!s_out)
 	{
-		FATAL_PRINTF(r, "Param `avi_stream_reader* s_out` must not be NULL. You asked for a stream but passed a NULL pointer, what's wrong with you?\r\n");
+		FATAL_PRINTF(r, "Param `avi_stream_reader* s_out` must not be NULL. You asked for a stream but passed a NULL pointer, what's wrong with you?" NL);
 		goto ErrRet;
 	}
 #endif
@@ -415,7 +421,7 @@ int avi_get_stream
 	s_out->stream_id = stream_id;
 	if (r->idx_offset && r->num_indices)
 	{
-		INFO_PRINTF(r, "Seeking for the first packet of the stream %d using the indices from the AVI file.\r\n", stream_id);
+		INFO_PRINTF(r, "Seeking the first packet of the stream %d using the indices from the AVI file." NL, stream_id);
 		if (!must_seek(r, r->idx_offset)) goto ErrRet;
 		avi_index_entry index;
 		for (fsize_t i = 0; i < r->num_indices; i++)
@@ -427,7 +433,7 @@ int avi_get_stream
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
 			if (stream_no == stream_id)
 			{
-				INFO_PRINTF(r, "Successfully find the first packet of the stream %d: Offset = 0x%x, Length = 0x%x.\r\n", stream_id, index.dwOffset, index.dwSize);
+				INFO_PRINTF(r, "Successfully found the first packet of the stream %d: Offset = 0x%"PRIx32", Length = 0x%"PRIx32"." NL, stream_id, index.dwOffset, index.dwSize);
 				s_out->cur_packet_offset = index.dwOffset;
 				s_out->cur_packet_len = index.dwSize;
 				break;
@@ -435,7 +441,7 @@ int avi_get_stream
 		}
 		if (!s_out->cur_packet_offset || !s_out->cur_packet_len)
 		{
-			FATAL_PRINTF(r, "Could not find the first packet for the stream id %d.\r\n", stream_id);
+			FATAL_PRINTF(r, "Could not find the first packet for the stream id %d." NL, stream_id);
 			goto ErrRet;
 		}
 	}
@@ -448,6 +454,6 @@ int avi_get_stream
 
 	return 1;
 ErrRet:
-	if (r) FATAL_PRINTF(r, "Reading AVI file failed.\r\n");
+	if (r) FATAL_PRINTF(r, "Reading AVI file failed." NL);
 	return 0;
 }

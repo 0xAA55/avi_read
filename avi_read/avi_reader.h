@@ -6,9 +6,17 @@
 #ifndef AVI_ENABLE_4GB_FILES
 typedef uint32_t fsize_t;
 typedef int32_t fssize_t;
+#define PRIfsize_t PRIu32
+#define PRIxfsize_t PRIx32
+#define PRIfssize_t PRId32
+#define PRIxfssize_t PRIx32
 #else
 typedef uint64_t fsize_t;
 typedef int64_t fssize_t;
+#define PRIfsize_t PRIu64
+#define PRIxfsize_t PRIx64
+#define PRIfssize_t PRId64
+#define PRIxfssize_t PRIx64
 #endif
 
 #ifndef AVI_MAX_STREAMS
