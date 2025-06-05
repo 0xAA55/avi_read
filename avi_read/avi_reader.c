@@ -219,14 +219,14 @@ int avi_reader_init
 		switch (MATCH4CC(fourcc_buf))
 		{
 		default:
-		case MAKE4CC('J', 'U', 'N', 'K'):
+		case FCC_JUNK:
 			f_logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", fourcc_buf);
 			break;
-		case MAKE4CC('L', 'I', 'S', 'T'):
+		case FCC_LIST:
 			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
 			switch (MATCH4CC(fourcc_buf))
 			{
-			case MAKE4CC('h', 'd', 'r', 'l'):
+			case FCC_hdrl:
 				f_logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"hdrl\"\r\n");
 				do
 				{
@@ -246,7 +246,7 @@ int avi_reader_init
 						h_end_of_chunk = h_chunk_pos + h_chunk_size;
 						switch (MATCH4CC(h_fourcc_buf))
 						{
-						case MAKE4CC('a', 'v', 'i', 'h'):
+						case FCC_avih:
 							if (avih_read)
 							{
 								f_logprintf(userdata, "[ERROR] AVI file format corrupted: duplicated main AVI header \"avih\"\r\n");
@@ -258,7 +258,7 @@ int avi_reader_init
 							has_index = (r->avih.dwFlags & AVIF_HASINDEX) == AVIF_HASINDEX;
 							avih_read = 1;
 							break;
-						case MAKE4CC('L', 'I', 'S', 'T'):
+						case FCC_LIST:
 							f_logprintf(userdata, "[INFO] Reading the stream list\r\n");
 							if (!must_match(r, "strl")) goto ErrRet;
 
@@ -298,7 +298,7 @@ int avi_reader_init
 							strl_read++;
 							break;
 						default:
-						case MAKE4CC('J', 'U', 'N', 'K'):
+						case FCC_JUNK:
 							f_logprintf(userdata, "[INFO] Skipping chunk \"%s\"\r\n", h_fourcc_buf);
 							break;
 						}
@@ -318,7 +318,7 @@ int avi_reader_init
 				} while (0);
 
 				break;
-			case MAKE4CC('m', 'o', 'v', 'i'):
+			case FCC_movi:
 				f_logprintf(userdata, "[INFO] Reading toplevel LIST chunk \"movi\"\r\n");
 				if (!must_tell(r, &r->stream_data_offset)) goto ErrRet;
 
@@ -329,7 +329,7 @@ int avi_reader_init
 					r->stream_data_is_lists = 1;
 				}
 				break;
-			case MAKE4CC('i', 'd', 'x', '1'):
+			case FCC_idx1:
 				f_logprintf(userdata, "[INFO] Reading toplevel chunk \"idx1\"\r\n");
 				if (!must_tell(r, &r->idx_offset)) goto ErrRet;
 				break;
