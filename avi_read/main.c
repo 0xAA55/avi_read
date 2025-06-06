@@ -382,10 +382,17 @@ void my_avi_player_show_video_frame(void *player, fsize_t offset, fsize_t length
     if (FAILED(hr)) goto Exit;
 
     HDC hPictureDC = NULL;
-    hr = picture->lpVtbl->get_CurDC(picture, &hPictureDC);
+    int32_t src_w, src_h;
+    hr = picture->lpVtbl->get_Width(picture, &src_w);
     if (FAILED(hr)) goto Exit;
 
-    BitBlt(p->hDC, 0, 0, p->video_width, p->video_height, hPictureDC, 0, 0, SRCCOPY);
+    hr = picture->lpVtbl->get_Height(picture, &src_h);
+    if (FAILED(hr)) goto Exit;
+
+    RECT rc = {0, 0, p->video_width, p->video_height };
+    hr = picture->lpVtbl->Render(picture, p->hDC, 0, p->video_height - 1, (int32_t)p->video_width, -(int32_t)p->video_height, 0, 0, src_w, src_h, &rc);
+    if (FAILED(hr)) goto Exit;
+
 Exit:
     if (stream) stream->lpVtbl->Release(stream);
     if (picture) picture->lpVtbl->Release(picture);
