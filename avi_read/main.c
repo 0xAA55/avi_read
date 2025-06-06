@@ -532,6 +532,11 @@ void my_avi_player_play_audio_frame(void *player, fsize_t offset, fsize_t length
     pwhdr->lpData = audio_data;
     pwhdr->dwBufferLength = (uint32_t)length;
 
+    // Prepare and play
+    mr = waveOutPrepareHeader(p->AudioDev, pwhdr, sizeof * pwhdr);
+    assert(mr == MMSYSERR_NOERROR);
+    mr = waveOutWrite(p->AudioDev, pwhdr, sizeof *pwhdr);
+    assert(mr == MMSYSERR_NOERROR);
 
 Exit:;
 }
