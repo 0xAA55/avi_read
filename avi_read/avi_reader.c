@@ -578,7 +578,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 #endif
 	r = s->r;
 	fsize_t packet_no = s->cur_stream_packet_index;
-	fsize_t packet_no_avi = s->cur_packet_index;
+	fsize_t packet_no_avi = s->cur_packet_index + 1;
 	int stream_id = s->stream_id;
 
 	// The kickstart of the packet seeking
