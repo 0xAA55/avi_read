@@ -350,6 +350,7 @@ int my_avi_player_create_window(void *player, uint32_t target_width, uint32_t ta
     }
     ShowWindow(p->Window, SW_SHOW);
 
+    // Use this to draw picture to data via GDI
     p->hDC = GetDC(p->Window);
     if (!p->hDC)
     {
@@ -357,7 +358,7 @@ int my_avi_player_create_window(void *player, uint32_t target_width, uint32_t ta
         goto ErrRet;
     }
 
-    // Initialize COM. I want to use `OleLoadPicture()`
+    // Initialize COM. I want to use the retro one `OleLoadPicture()`
     if (FAILED(CoInitialize(NULL)))
     {
         fprintf(stderr, "[FATAL] CoInitialize() failed.\n");
