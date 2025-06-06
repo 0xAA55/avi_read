@@ -14,10 +14,10 @@
 #include <Windows.h>
 #include <olectl.h>
 #include <ocidl.h>
-int my_avi_player_create_window(void* my_avi_player, uint32_t target_width, uint32_t target_height);
-void my_avi_player_destroy_window(void* my_avi_player);
-void my_avi_player_show_video_frame(void* my_avi_player, fsize_t offset, fsize_t length);
-void my_avi_player_play_audio_frame(void* my_avi_player, fsize_t offset, fsize_t length);
+int my_avi_player_create_window(void *my_avi_player, uint32_t target_width, uint32_t target_height);
+void my_avi_player_destroy_window(void *my_avi_player);
+void my_avi_player_show_video_frame(void *my_avi_player, fsize_t offset, fsize_t length);
+void my_avi_player_play_audio_frame(void *my_avi_player, fsize_t offset, fsize_t length);
 #ifdef _WIN64
 #  define PRIsize_t PRIu64
 #else
@@ -35,7 +35,7 @@ typedef struct
     uint32_t video_width;
     uint32_t video_height;
 
-    FILE* fp;
+    FILE *fp;
 
 #if WINDOWS_DEMO
     HINSTANCE hInstance;
@@ -47,25 +47,25 @@ typedef struct
 #endif
 } my_avi_player;
 
-static fssize_t my_avi_player_read(void* buffer, size_t len, void* userdata)
+static fssize_t my_avi_player_read(void *buffer, size_t len, void *userdata)
 {
-    my_avi_player* p = (my_avi_player*)userdata;
+    my_avi_player *p = (my_avi_player *)userdata;
     return (fssize_t)fread(buffer, 1, len, p->fp);
 }
 
-static fssize_t my_avi_player_seek(fsize_t offset, void* userdata)
+static fssize_t my_avi_player_seek(fsize_t offset, void *userdata)
 {
-    my_avi_player* p = (my_avi_player*)userdata;
+    my_avi_player *p = (my_avi_player *)userdata;
     return fseek(p->fp, offset, SEEK_SET) ? -1 : (fssize_t)offset;
 }
 
-static fssize_t my_avi_player_tell(void* userdata)
+static fssize_t my_avi_player_tell(void *userdata)
 {
-    my_avi_player* p = (my_avi_player*)userdata;
+    my_avi_player *p = (my_avi_player *)userdata;
     return ftell(p->fp);
 }
 
-static void my_avi_player_poll_window_events(my_avi_player* p)
+static void my_avi_player_poll_window_events(my_avi_player *p)
 {
 #if WINDOWS_DEMO
     MSG msg;
@@ -85,7 +85,7 @@ static void my_avi_player_poll_window_events(my_avi_player* p)
 #endif
 }
 
-static void my_avi_player_on_video_cb(fsize_t offset, fsize_t length, void* userdata)
+static void my_avi_player_on_video_cb(fsize_t offset, fsize_t length, void *userdata)
 {
 #if WINDOWS_DEMO
     my_avi_player_show_video_frame(userdata, offset, length);
@@ -94,7 +94,7 @@ static void my_avi_player_on_video_cb(fsize_t offset, fsize_t length, void* user
 #endif
 }
 
-static void my_avi_player_on_audio_cb(fsize_t offset, fsize_t length, void* userdata)
+static void my_avi_player_on_audio_cb(fsize_t offset, fsize_t length, void *userdata)
 {
 #if WINDOWS_DEMO
     my_avi_player_play_audio_frame(userdata, offset, length);
@@ -103,7 +103,7 @@ static void my_avi_player_on_audio_cb(fsize_t offset, fsize_t length, void* user
 #endif
 }
 
-static int my_avi_player_open(my_avi_player* p, const char *path)
+static int my_avi_player_open(my_avi_player *p, const char *path)
 {
     memset(p, 0, sizeof *p);
     p->fp = fopen(path, "rb");
@@ -203,12 +203,12 @@ ErrRet:
     return 0;
 }
 
-static int my_avi_player_play(my_avi_player* p)
+static int my_avi_player_play(my_avi_player *p)
 {
     avi_stream_reader *s_video = &p->s_video;
     avi_stream_reader *s_audio = &p->s_audio;
-    avi_stream_info* h_video = s_video->stream_info;
-    avi_stream_info* h_audio = s_audio->stream_info;
+    avi_stream_info *h_video = s_video->stream_info;
+    avi_stream_info *h_audio = s_audio->stream_info;
 
     uint64_t start_time = get_super_precise_time_in_ns();
     while (1)
@@ -276,7 +276,7 @@ LRESULT CALLBACK my_avi_player_window_proc_W(HWND hWnd, uint32_t msg, WPARAM wp,
     case WM_CREATE:
         do
         {
-            CREATESTRUCTW* cs = (CREATESTRUCTW*)lp;
+            CREATESTRUCTW *cs = (CREATESTRUCTW *)lp;
             SetWindowLongPtrW(hWnd, 0, (LONG_PTR)cs->lpCreateParams);
         } while (0);
         break;
@@ -289,9 +289,9 @@ LRESULT CALLBACK my_avi_player_window_proc_W(HWND hWnd, uint32_t msg, WPARAM wp,
     return 0;
 }
 
-int my_avi_player_create_window(void* player, uint32_t target_width, uint32_t target_height)
+int my_avi_player_create_window(void *player, uint32_t target_width, uint32_t target_height)
 {
-    my_avi_player* p = (my_avi_player*)player;
+    my_avi_player *p = (my_avi_player *)player;
 
     // https://devblogs.microsoft.com/oldnewthing/20041025-00/?p=37483
     extern HINSTANCE __ImageBase;
@@ -361,7 +361,7 @@ ErrRet:
 
 void my_avi_player_destroy_window(void* player)
 {
-    my_avi_player* p = (my_avi_player*)player;
+    my_avi_player *p = (my_avi_player *)player;
     if (p->Window && p->hDC) ReleaseDC(p->Window, p->hDC);
     if (p->Window) DestroyWindow(p->Window);
     if (p->WindowClass) UnregisterClassW(p->WindowClass, p->hInstance);
@@ -371,9 +371,9 @@ void my_avi_player_destroy_window(void* player)
     p->WindowClass = 0;
 }
 
-void my_avi_player_show_video_frame(void* player, fsize_t offset, fsize_t length)
+void my_avi_player_show_video_frame(void *player, fsize_t offset, fsize_t length)
 {
-    my_avi_player* p = (my_avi_player*)player;
+    my_avi_player *p = (my_avi_player *)player;
 
     // I'm using the very very old way to convert JPEG to BMP, because it supports C.
     // Older than WIC, older than Gdiplus, older than C++ smart pointers.
@@ -389,11 +389,11 @@ void my_avi_player_show_video_frame(void* player, fsize_t offset, fsize_t length
 
     // Here comes the COM part.
     HRESULT hr = S_OK;
-    IStream* stream = NULL;
+    IStream *stream = NULL;
     hr = CreateStreamOnHGlobal(my_jpeg_picture_memory, TRUE, &stream);
     if (FAILED(hr)) goto Exit;
 
-    IPicture* picture = NULL;
+    IPicture *picture = NULL;
     hr = OleLoadPicture(stream, length, FALSE, &IID_IPicture, &picture);
     if (FAILED(hr)) goto Exit;
 
@@ -408,9 +408,9 @@ Exit:
     if (my_jpeg_picture_memory) GlobalFree(my_jpeg_picture_memory);
 }
 
-void my_avi_player_play_audio_frame(void* player, fsize_t offset, fsize_t length)
+void my_avi_player_play_audio_frame(void *player, fsize_t offset, fsize_t length)
 {
-    my_avi_player* p = (my_avi_player*)player;
+    my_avi_player *p = (my_avi_player *)player;
     void *audio_data = malloc(length);
     if (!audio_data) return;
 
@@ -426,8 +426,8 @@ void my_avi_player_play_audio_frame(void* player, fsize_t offset, fsize_t length
 static uint64_t get_super_precise_time_in_ns()
 {
     uint64_t counter = 0, freq = 0;
-    QueryPerformanceFrequency((LARGE_INTEGER*) & freq);
-    QueryPerformanceCounter((LARGE_INTEGER*)&counter);
+    QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
+    QueryPerformanceCounter((LARGE_INTEGER *)&counter);
     return counter * 1000000000 / freq;
 }
 

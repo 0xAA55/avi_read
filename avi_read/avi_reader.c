@@ -74,22 +74,22 @@
 #  define NL "\r\n"
 #endif
 
-int avi_stream_is_video(avi_stream_info * si)
+int avi_stream_is_video(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "vids", 4);
 }
 
-int avi_stream_is_audio(avi_stream_info* si)
+int avi_stream_is_audio(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "auds", 4);
 }
 
-int avi_stream_is_text(avi_stream_info* si)
+int avi_stream_is_text(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "txts", 4);
 }
 
-int avi_stream_is_midi(avi_stream_info* si)
+int avi_stream_is_midi(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "mids", 4);
 }
@@ -325,7 +325,7 @@ int avi_reader_init
 								FATAL_PRINTF(r, "Too many streams in the AVI file, max supported streams is %d" NL, AVI_MAX_STREAMS);
 								goto ErrRet;
 							}
-							avi_stream_info* stream_data = &r->avi_stream_info[r->num_streams++];
+							avi_stream_info *stream_data = &r->avi_stream_info[r->num_streams++];
 							const fsize_t max_string_len = AVI_MAX_STREAM_NAME - 1;
 
 							char strl_fourcc[5] = { 0 };
@@ -376,8 +376,8 @@ int avi_reader_init
 
 							char fourcc_type[5] = { 0 };
 							char fourcc_handler[5] = { 0 };
-							*(uint32_t*)fourcc_type = stream_data->stream_header.fccType;
-							*(uint32_t*)fourcc_handler = stream_data->stream_header.fccHandler;
+							*(uint32_t *)fourcc_type = stream_data->stream_header.fccType;
+							*(uint32_t *)fourcc_handler = stream_data->stream_header.fccHandler;
 							if (!string_len)
 							{
 								INFO_PRINTF(r, "Stream %u: Type: \"%s\", Handler: \"%s\"" NL, stream_id, fourcc_type, fourcc_handler);
@@ -502,7 +502,7 @@ int avi_get_stream_reader
 	if (!on_palette_change) on_palette_change = default_on_stream_data_cb;
 	if (!on_audio) on_audio = default_on_stream_data_cb;
 
-	memset(s_out, 0, sizeof  *s_out);
+	memset(s_out, 0, sizeof *s_out);
 	s_out->r = r;
 	s_out->stream_id = stream_id;
 	s_out->stream_info = &r->avi_stream_info[stream_id];
@@ -534,7 +534,7 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 #endif
 	r = s->r;
 	char fourcc_buf[5] = { 0 };
-	*(uint32_t*)fourcc_buf = s->cur_4cc;
+	*(uint32_t *)fourcc_buf = s->cur_4cc;
 	switch (MATCH2CC(&fourcc_buf[2])) // Avoid endianess handling
 	{
 	case TCC_db:
@@ -601,7 +601,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 			int stream_no;
 			char fourcc_buf[5] = { 0 };
 			if (!must_read(r, &index, sizeof index)) goto ErrRet;
-			*(uint32_t*)fourcc_buf = index.dwChunkId;
+			*(uint32_t *)fourcc_buf = index.dwChunkId;
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
 			if (stream_no == stream_id)
 			{
@@ -659,7 +659,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 				else if (stream_no == stream_id)
 				{
 					DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no + 1, stream_id, chunk_start, chunk_size);
-					s->cur_4cc = *(uint32_t*)fourcc_buf;
+					s->cur_4cc = *(uint32_t *)fourcc_buf;
 					s->cur_packet_index = packet_index;
 					s->cur_packet_offset = chunk_start;
 					s->cur_packet_len = chunk_size;
