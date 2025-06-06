@@ -1,5 +1,6 @@
 ﻿
 #include <stdio.h>
+#include <assert.h>
 #include "avi_reader.h"
 
 #ifdef _MSC_VER
@@ -454,16 +455,41 @@ Exit:
 void my_avi_player_play_audio_frame(void *player, fsize_t offset, fsize_t length)
 {
     my_avi_player *p = (my_avi_player *)player;
-    void *audio_data = malloc(length);
-    if (!audio_data) return;
 
-    memset(audio_data, 0, length);
+    // If the audio device was not opened yet
+    if (!p->AudioDev)
+    {
+        // Extract the full audio format data with extension data to feed the `waveOutOpen()`
+        avi_stream_info *audio_stream_info = p->s_audio.stream_info;
+        size_t format_len = audio_stream_info->stream_format_len;
+        void *format_ptr = malloc(format_len);
+        if (!format_ptr) goto Exit;
+        my_avi_player_seek(audio_stream_info->stream_format_offset, p);
+        my_avi_player_read(format_ptr, format_len, p);
+        MMRESULT mr = waveOutOpen(&p->AudioDev, WAVE_MAPPER, format_ptr, 0, 0, CALLBACK_NULL | WAVE_ALLOWSYNC);
+        switch (mr)
+        {
+        case MMSYSERR_NOERROR:
+            free(format_ptr);
+            break;
+        case WAVERR_BADFORMAT:
+            fprintf(stderr, "[FATAL] waveOutOpen(): WAVERR_BADFORMAT.\n");
+        default:
+            free(format_ptr);
+            goto Exit;
+        }
+        printf("[INFO] Audio device opended\n");
+    }
+    void *audio_data = NULL;
+    WAVEHDR *pwhdr = NULL;
+    MMRESULT mr;
+    AudioPlayBuffer *playbuf;
+
     my_avi_player_seek(offset, player);
     my_avi_player_read(audio_data, length, player);
 
 
 
-    free(audio_data);
 }
 
 static uint64_t get_super_precise_time_in_ns()
