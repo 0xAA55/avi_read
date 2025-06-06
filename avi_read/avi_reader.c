@@ -374,6 +374,25 @@ int avi_reader_init
 								if (!must_seek(r, strl_end_of_chunk)) goto ErrRet;
 							} while (strl_end_of_chunk < hdrl_end_of_chunk);
 
+							if (avi_stream_is_audio(stream_data))
+							{
+								size_t max_read = sizeof stream_data->audio_format;
+								size_t min_read = max_read - 2;
+								if (stream_data->stream_format_len >= min_read)
+								{
+									if (!must_seek(r, stream_data->stream_format_offset)) goto ErrRet;
+									if (!must_read(r, &stream_data->audio_format, max_read)) goto ErrRet;
+									switch (stream_data->audio_format.wFormatTag)
+									{
+									case 2:
+										break;
+									default:
+										stream_data->audio_format.cbSize = 0;
+										break;
+									}
+								}
+							}
+
 							char fourcc_type[5] = { 0 };
 							char fourcc_handler[5] = { 0 };
 							*(uint32_t *)fourcc_type = stream_data->stream_header.fccType;
