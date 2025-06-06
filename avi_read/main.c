@@ -513,11 +513,27 @@ void my_avi_player_play_audio_frame(void *player, fsize_t offset, fsize_t length
             break;
         }
     }
+    // If the length of the buffer should be changed, don't use `realloc()`, just use a new memory area.
+    if (playbuf->buffer_size != length)
+    {
+        free(playbuf->buffer);
+        playbuf->buffer_size = 0;
+        playbuf->buffer = malloc(length);
+        if (!playbuf->buffer) goto Exit;
+        playbuf->buffer_size = length;
+    }
+    audio_data = playbuf->buffer;
+
+    // Write the extracted audio data to the buffer
     my_avi_player_seek(offset, player);
     my_avi_player_read(audio_data, length, player);
 
+    // Link the WAVEHDR to the buffer
+    pwhdr->lpData = audio_data;
+    pwhdr->dwBufferLength = (uint32_t)length;
 
 
+Exit:;
 }
 
 static uint64_t get_super_precise_time_in_ns()
