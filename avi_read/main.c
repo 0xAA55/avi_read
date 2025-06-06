@@ -202,8 +202,8 @@ static int my_avi_player_play(my_avi_player *p)
         uint64_t v_rate_ns = 0;
         uint64_t a_rate_ns = 0;
 
-        if (h_video) v_rate_ns = (uint64_t)h_video->stream_header.dwRate * 1000000000 / h_video->stream_header.dwScale;
-        if (h_audio) a_rate_ns = (uint64_t)h_audio->stream_header.dwRate * 1000000000 / h_audio->stream_header.dwScale;
+        if (h_video) v_rate_ns = (uint64_t)h_video->stream_header.dwRate * 1000000 / h_video->stream_header.dwScale;
+        if (h_audio) a_rate_ns = (uint64_t)h_audio->stream_header.dwRate * 1000000 / h_audio->stream_header.dwScale;
 
         uint32_t target_v_frame_no = 0;
         uint32_t target_a_frame_no = 0;
