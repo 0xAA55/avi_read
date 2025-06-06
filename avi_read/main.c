@@ -378,6 +378,30 @@ void my_avi_player_destroy_window(void* player)
     if (p->Window) DestroyWindow(p->Window);
     if (p->WindowClass) UnregisterClassW(p->WindowClass, p->hInstance);
     CoUninitialize();
+    if (p->AudioDev)
+    {
+        waveOutReset(p->AudioDev);
+        for (size_t i = 0; i < PLAY_BUFFERS; i++)
+        {
+            MMRESULT mr;
+            AudioPlayBuffer *playbuf = &p->a_play_buf[i];
+            WAVEHDR *pwhdr = &playbuf->whdr;
+            if (pwhdr->dwFlags & WHDR_PREPARED)
+            {
+                do
+                {
+                    mr = waveOutUnprepareHeader(p->AudioDev, pwhdr, sizeof * pwhdr);
+                } while (mr == WAVERR_STILLPLAYING);
+                assert(mr == MMSYSERR_NOERROR);
+            }
+            free(playbuf->buffer);
+            playbuf->buffer = NULL;
+            playbuf->buffer_size = 0;
+            memset(pwhdr, 0, sizeof *pwhdr);
+        }
+        waveOutClose(p->AudioDev);
+    }
+    p->cur_audio_play_buffer = 0;
     p->hDC = 0;
     p->Window = 0;
     p->WindowClass = 0;
