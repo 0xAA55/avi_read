@@ -234,7 +234,7 @@ static int my_avi_player_play(my_avi_player *p)
         if (v_available && v_advanced) avi_stream_reader_call_callback_functions(s_video);
         if (a_available && a_advanced) avi_stream_reader_call_callback_functions(s_audio);
 
-        if (!v_available && !a_available) break;
+        if ((!v_available && v_advanced) && (!a_available && a_advanced)) break;
 
         my_avi_player_poll_window_events(p);
         if (p->should_quit) return p->exit_code;
