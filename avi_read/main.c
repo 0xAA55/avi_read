@@ -213,6 +213,10 @@ static int my_avi_player_play(my_avi_player *p)
     avi_stream_reader *s_audio = &p->s_audio;
     avi_stream_info *h_video = s_video->stream_info;
     avi_stream_info *h_audio = s_audio->stream_info;
+    wave_format_ex *af = &h_audio->audio_format;
+    fsize_t cur_samples_extracted = 0;
+    int v_available = (s_video != 0);
+    int a_available = (s_audio != 0);
 
     uint64_t start_time = get_super_precise_time_in_ns();
     while (1)
@@ -221,41 +225,43 @@ static int my_avi_player_play(my_avi_player *p)
         uint64_t delta_time = cur_time - start_time;
 
         uint64_t v_rate_ns = 0;
-        uint64_t a_rate_ns = 0;
+        uint32_t a_sample_rate = 0;
 
         if (h_video) v_rate_ns = (uint64_t)h_video->stream_header.dwRate * 1000000 / h_video->stream_header.dwScale;
-        if (h_audio) a_rate_ns = (uint64_t)h_audio->stream_header.dwRate * 1000000 / h_audio->stream_header.dwScale;
+        if (h_audio) a_sample_rate = (uint32_t)h_audio->stream_header.dwRate / h_audio->stream_header.dwScale;
 
         uint32_t target_v_frame_no = 0;
-        uint32_t target_a_frame_no = 0;
+        uint32_t target_a_sample_no = 0;
 
         if (h_video) target_v_frame_no = (uint32_t)(delta_time / v_rate_ns);
-        if (h_audio) target_a_frame_no = (uint32_t)(delta_time / a_rate_ns);
+        if (h_audio) target_a_sample_no = (uint32_t)(delta_time * a_sample_rate / 1000000000);
 
         int v_advanced = 0;
         int a_advanced = 0;
-        int v_available = 0;
-        int a_available = 0;
         if (h_video)
         {
             while (s_video->cur_stream_packet_index < target_v_frame_no)
             {
                 v_advanced = 1;
                 v_available = avi_stream_reader_move_to_next_packet(s_video, 0);
+                if (!v_available) break;
             }
         }
         if (h_audio)
         {
-            while (s_audio->cur_stream_packet_index < target_a_frame_no)
+            while (cur_samples_extracted < target_a_sample_no)
             {
                 a_advanced = 1;
                 a_available = avi_stream_reader_move_to_next_packet(s_audio, 0);
+                if (!a_available) break;
+                fsize_t cur_packet_samples = s_audio->cur_packet_len / af->nBlockAlign;
+                cur_samples_extracted += cur_packet_samples;
             }
         }
         if (v_available && v_advanced) avi_stream_reader_call_callback_functions(s_video);
         if (a_available && a_advanced) avi_stream_reader_call_callback_functions(s_audio);
 
-        if ((!v_available && v_advanced) && (!a_available && a_advanced)) break;
+        if ((!v_available) && (!a_available)) break;
 
         my_avi_player_poll_window_events(p);
         if (p->should_quit) return p->exit_code;
