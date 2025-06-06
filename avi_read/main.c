@@ -79,6 +79,13 @@ static fssize_t my_avi_player_tell(void *userdata)
     return ftell(p->fp);
 }
 
+static AudioPlayBuffer *my_avi_player_choose_audio_buffer(my_avi_player *p)
+{
+    AudioPlayBuffer *ret = &p->a_play_buf[p->cur_audio_play_buffer ++];
+    p->cur_audio_play_buffer %= PLAY_BUFFERS;
+    return ret;
+}
+
 static void my_avi_player_poll_window_events(my_avi_player *p)
 {
 #if WINDOWS_DEMO
