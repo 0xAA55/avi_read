@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <inttypes.h>
 
+#pragma pack(push, 1)
+
 typedef struct
 {
 	int32_t x;
@@ -79,5 +81,7 @@ typedef struct
 	uint16_t wBitsPerSample;
 	uint16_t cbSize;
 } wave_format_ex;
+
+#pragma pack(pop)
 
 #endif
