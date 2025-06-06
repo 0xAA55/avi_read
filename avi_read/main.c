@@ -14,6 +14,7 @@
 #include <Windows.h>
 #include <olectl.h>
 #include <ocidl.h>
+#define PLAY_BUFFERS 3
 int my_avi_player_create_window(void *my_avi_player, uint32_t target_width, uint32_t target_height);
 void my_avi_player_destroy_window(void *my_avi_player);
 void my_avi_player_show_video_frame(void *my_avi_player, fsize_t offset, fsize_t length);
@@ -26,6 +27,16 @@ void my_avi_player_play_audio_frame(void *my_avi_player, fsize_t offset, fsize_t
 #endif
 
 static uint64_t get_super_precise_time_in_ns();
+
+
+#if WINDOWS_DEMO
+typedef struct
+{
+    WAVEHDR whdr;
+    void *buffer;
+    size_t buffer_size;
+}AudioPlayBuffer;
+#endif
 
 typedef struct
 {
@@ -42,6 +53,9 @@ typedef struct
     LPCWSTR WindowClass;
     HWND Window;
     HDC hDC;
+    HWAVEOUT AudioDev;
+    AudioPlayBuffer a_play_buf[PLAY_BUFFERS];
+    int cur_audio_play_buffer;
     int should_quit;
     int exit_code;
 #endif
