@@ -593,19 +593,19 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 	if (r->idx_offset && r->num_indices)
 	{
 		DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d using the indices from the AVI file." NL, packet_no + 1, stream_id);
-		if (!must_seek(r, r->idx_offset)) goto ErrRet;
 		fsize_t start_of_movi = r->stream_data_offset - 4;
 		avi_index_entry index;
 		for (fsize_t i = packet_no_avi; i < r->num_indices; i++)
 		{
 			int stream_no;
 			char fourcc_buf[5] = { 0 };
+			if (!must_seek(r, r->idx_offset + i * (sizeof index))) goto ErrRet;
 			if (!must_read(r, &index, sizeof index)) goto ErrRet;
 			*(uint32_t *)fourcc_buf = index.dwChunkId;
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
 			if (stream_no == stream_id)
 			{
-				fsize_t offset = index.dwOffset + start_of_movi;
+				fsize_t offset = index.dwOffset + start_of_movi + 8;
 				DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no, stream_id, offset, index.dwSize);
 				s->cur_4cc = index.dwChunkId;
 				s->cur_packet_index = i;
