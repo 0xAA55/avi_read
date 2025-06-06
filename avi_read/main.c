@@ -485,6 +485,34 @@ void my_avi_player_play_audio_frame(void *player, fsize_t offset, fsize_t length
     MMRESULT mr;
     AudioPlayBuffer *playbuf;
 
+    while (1)
+    {
+        // Randomly pick an audio play buffer that's not playing currently.
+        playbuf = my_avi_player_choose_audio_buffer(p);
+        pwhdr = &playbuf->whdr;
+
+        // This playback buffer is totally untouched, use it.
+        if (!pwhdr->dwFlags) break;
+
+        // This playback buffer is being played, so don't use it.
+        if (pwhdr->dwFlags & WHDR_INQUEUE) continue;
+
+        // This playback buffer is `done`, then give it a new job.
+        if (pwhdr->dwFlags & WHDR_DONE)
+        {
+            if ((pwhdr->dwFlags & WHDR_PREPARED) == WHDR_PREPARED)
+            {
+                mr = waveOutUnprepareHeader(p->AudioDev, pwhdr, sizeof * pwhdr);
+                if (mr == WAVERR_STILLPLAYING)
+                {
+                    // It said it's done but returns "I'm still playing", skip it.
+                    continue;
+                }
+                assert(mr == MMSYSERR_NOERROR);
+            }
+            break;
+        }
+    }
     my_avi_player_seek(offset, player);
     my_avi_player_read(audio_data, length, player);
 
