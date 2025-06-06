@@ -139,7 +139,7 @@ static int my_avi_player_open(my_avi_player *p, const char *path)
         my_avi_player_seek,
         my_avi_player_tell,
         NULL,
-        PRINT_DEBUG
+        PRINT_INFO
     )) return 0;
 
     // I want to dedicate my stream reader 0 to the video stream,
