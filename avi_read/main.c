@@ -309,6 +309,7 @@ int my_avi_player_create_window(void *player, uint32_t target_width, uint32_t ta
         fprintf(stderr, "[FATAL] CreateWindowExW() failed.\n");
         goto ErrRet;
     }
+    ShowWindow(p->Window, SW_SHOW);
     RECT rc_w, rc_c;
     GetWindowRect(p->Window, &rc_w);
     GetClientRect(p->Window, &rc_c);
