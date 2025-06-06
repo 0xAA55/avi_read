@@ -174,25 +174,8 @@ static int my_avi_player_open(my_avi_player *p, const char *path)
         }
     }
 
-    if (p->s_video.stream_info)
-    {
-        char fourcc_buf[5] = { 0 };
-        memcpy(fourcc_buf, &p->s_video.stream_info->stream_header.fccHandler, 4);
-        if (memcmp(fourcc_buf, "MJPG", 4))
-        {
-            fprintf(stderr, "[FATAL] Only \"MJPEG\" video streams are supported, got handler \"%s\".\n", fourcc_buf);
-            goto ErrRet;
-        }
-
-        rect* rc_frame = &p->s_video.stream_info->stream_header.rcFrame;
-        p->video_width = rc_frame->r - rc_frame->x;
-        p->video_height = rc_frame->b - rc_frame->y;
-    }
-    else
-    {
-        p->video_width = 320;
-        p->video_height = 240;
-    }
+    p->video_width = p->r.avih.dwWidth;
+    p->video_height = p->r.avih.dwHeight;
 
 #ifdef WINDOWS_DEMO
     if (!my_avi_player_create_window(p, p->video_width, p->video_height)) goto ErrRet;
