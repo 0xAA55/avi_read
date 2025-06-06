@@ -478,6 +478,7 @@ static uint64_t get_super_precise_time_in_ns()
 #pragma comment(lib, "gdi32.lib")
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "winmm.lib")
 #endif
 
 #if __unix__
