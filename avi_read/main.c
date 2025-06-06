@@ -359,7 +359,7 @@ void my_avi_player_show_video_frame(void *player, fsize_t offset, fsize_t length
     my_avi_player *p = (my_avi_player *)player;
 
     // I'm using the very very old way to convert JPEG to BMP, because it supports C.
-    // Older than WIC, older than Gdiplus, older than C++ smart pointers.
+    // Older than WIC, and older than Gdiplus, older than C++ smart pointers.
     HGLOBAL my_jpeg_picture_memory = GlobalAlloc(GMEM_MOVEABLE, length);
     if (!my_jpeg_picture_memory) goto Exit;
 
