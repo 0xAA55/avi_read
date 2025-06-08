@@ -40,7 +40,7 @@ typedef struct
 }AudioPlayBuffer;
 #endif
 
-typedef struct
+typedef struct my_avi_player_s
 {
     avi_reader r;
     avi_stream_reader s_video;
