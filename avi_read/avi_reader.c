@@ -613,7 +613,7 @@ int avi_get_stream_reader
 	s_out->on_palette_change = on_palette_change;
 	s_out->on_audio = on_audio;
 
-	return avi_stream_reader_move_to_next_packet(s_out, 1);
+	return avi_stream_reader_move_to_next_packet(s_out, 0);
 ErrRet:
 	if (r) FATAL_PRINTF(r, "Reading AVI file failed." NL);
 	if (s_out) memset(s_out, 0, sizeof  *s_out);
