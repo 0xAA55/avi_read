@@ -710,7 +710,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 	}
 #endif
 	r = s->r;
-	fsize_t packet_no = s->cur_stream_packet_index;
+	fsize_t packet_no = s->cur_stream_packet_index + 1;
 	fsize_t packet_no_avi = s->cur_packet_index + 1;
 	int stream_id = s->stream_id;
 
@@ -726,26 +726,32 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 	int packet_found = 0;
 	if (r->idx_offset && r->num_indices)
 	{
-		DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d using the indices from the AVI file." NL, packet_no + 1, stream_id);
+		if (!s->mute_cur_stream_debug_print && packet_no == 0)
+		{
+			DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d using the indices from the AVI file." NL, packet_no, stream_id);
+		}
 		fsize_t start_of_movi = r->stream_data_offset - 4;
 		avi_index_entry index;
 		for (fsize_t i = packet_no_avi; i < r->num_indices; i++)
 		{
 			int stream_no;
 			char fourcc_buf[5] = { 0 };
-			if (!must_seek(r, r->idx_offset + i * (sizeof index))) goto ErrRet;
-			if (!must_read(r, &index, sizeof index)) goto ErrRet;
+			if (!must_seek_s(s, r->idx_offset + i * (sizeof index))) goto ErrRet;
+			if (!must_read_s(s, &index, sizeof index)) goto ErrRet;
 			*(uint32_t *)fourcc_buf = index.dwChunkId;
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
 			if (stream_no == stream_id)
 			{
 				fsize_t offset = index.dwOffset + start_of_movi + 8;
-				DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no, stream_id, offset, index.dwSize);
+				if (!s->mute_cur_stream_debug_print)
+				{
+					DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t"(%"PRIfsize_t") of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no, packet_no_avi, stream_id, offset, index.dwSize);
+				}
 				s->cur_4cc = index.dwChunkId;
 				s->cur_packet_index = i;
 				s->cur_packet_offset = offset;
 				s->cur_packet_len = index.dwSize;
-				s->cur_stream_packet_index = packet_no + 1;
+				s->cur_stream_packet_index = packet_no;
 				s->is_no_more_packets = 0;
 				packet_found = 1;
 				if (call_receive_functions)
@@ -758,12 +764,15 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 		if (!packet_found)
 		{
 			s->is_no_more_packets = 1;
-			WARN_PRINTF(r, "Could not find packet %"PRIfsize_t" for the stream id %d." NL, packet_no + 1, stream_id);
+			WARN_PRINTF(r, "Could not find packet %"PRIfsize_t" for the stream id %d." NL, packet_no, stream_id);
 		}
 	}
 	else
 	{
-		DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d via file traversal." NL, packet_no + 1, stream_id);
+		if (!s->mute_cur_stream_debug_print && packet_no == 0)
+		{
+			DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d via file traversal." NL, packet_no, stream_id);
+		}
 		if (!must_seek(r, s->cur_packet_offset + s->cur_packet_len)) goto ErrRet;
 
 		char fourcc_buf[5] = { 0 };
@@ -781,7 +790,10 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 			if (!memcmp(fourcc_buf, "LIST", 4))
 			{
 				if (!must_match_s(s, "rec ")) goto ErrRet;
-				DEBUG_PRINTF(r, "Seeking into a LIST(rec) chunk." NL);
+				if (!s->mute_cur_stream_debug_print)
+				{
+					DEBUG_PRINTF(r, "Seeking into a LIST(rec) chunk." NL);
+				}
 				// Move inside the LIST chunk to find the packet.
 				continue; // Not to skip the chunk.
 			}
@@ -794,12 +806,15 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 				}
 				else if (stream_no == stream_id)
 				{
-					DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t" of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no + 1, stream_id, chunk_start, chunk_size);
+					if (!s->mute_cur_stream_debug_print)
+					{
+						DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t"(%"PRIfsize_t") of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no, packet_no_avi, stream_id, chunk_start, packet_index);
+					}
 					s->cur_4cc = *(uint32_t *)fourcc_buf;
 					s->cur_packet_index = packet_index;
 					s->cur_packet_offset = chunk_start;
 					s->cur_packet_len = chunk_size;
-					s->cur_stream_packet_index = packet_no + 1;
+					s->cur_stream_packet_index = packet_no;
 					s->is_no_more_packets = 0;
 					packet_found = 1;
 					if (call_receive_functions)
