@@ -109,6 +109,9 @@ typedef struct
 	/// The short path to `r->avi_stream_info[self->stream_id]`
 	avi_stream_info *stream_info;
 
+	/// Is this stream ended?
+	int is_no_more_packets;
+
 	/// The current packet FourCC value. Used to determine the type of the packet.
 	uint32_t cur_4cc;
 
