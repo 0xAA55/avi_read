@@ -245,6 +245,7 @@ static int my_avi_player_play(my_avi_player *p)
     wave_format_ex *af = &h_audio->audio_format;
     int have_video = (h_video != 0);
     int have_audio = (h_audio != 0);
+    uint64_t audio_byte_pos = 0;
 
 #ifdef WINDOWS_DEMO
     if (have_audio)
@@ -253,6 +254,7 @@ static int my_avi_player_play(my_avi_player *p)
         {
             printf("A");
             if (!avi_stream_reader_move_to_next_packet(s_audio, 1)) return 0;
+            audio_byte_pos += s_audio->cur_packet_len;
         }
     }
 #endif
@@ -289,6 +291,7 @@ static int my_avi_player_play(my_avi_player *p)
             int new_packet_got = 0;
             int num_playing = 0;
             int num_idle = 0;
+            uint64_t target_a_byte_pos = relative_time_ms * h_audio->audio_format.nAvgBytesPerSec / 1000;
 
 #if WINDOWS_DEMO
             // Make sure all buffers are used for playing
@@ -297,8 +300,17 @@ static int my_avi_player_play(my_avi_player *p)
                 windows_demo_audio_buffers_get_status(&p->windows_guts, &num_idle, &num_playing);
                 if (num_playing < AUDIO_PLAY_BUFFERS)
                 {
-                    printf("A");
-                    avi_stream_reader_move_to_next_packet(s_audio, 1);
+                    if (audio_byte_pos >= target_a_byte_pos)
+                    {
+                        printf("A");
+                        avi_stream_reader_move_to_next_packet(s_audio, 1);
+                    }
+                    else
+                    {
+                        printf("a");
+                        avi_stream_reader_move_to_next_packet(s_audio, 0);
+                    }
+                    audio_byte_pos += s_audio->cur_packet_len;
                 }
             }
 #else
