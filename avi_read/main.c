@@ -36,6 +36,7 @@ typedef struct
     WAVEHDR whdr;
     void *buffer;
     size_t buffer_size;
+    size_t data_size;
 }AudioPlayBuffer;
 #endif
 
