@@ -249,7 +249,6 @@ static int my_avi_player_play(my_avi_player *p)
 #ifdef WINDOWS_DEMO
     if (have_audio)
     {
-        avi_stream_reader_call_callback_functions(s_audio);
         while (!p->windows_guts.audio_buffer_is_playing)
         {
             printf("A");
@@ -259,7 +258,6 @@ static int my_avi_player_play(my_avi_player *p)
 #endif
 
     uint64_t start_time = get_super_precise_time_in_ns();
-    avi_stream_reader_call_callback_functions(s_video);
     while (have_video || have_audio)
     {
         uint64_t cur_time = get_super_precise_time_in_ns();
