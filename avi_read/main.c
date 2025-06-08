@@ -83,16 +83,70 @@ static fssize_t my_avi_player_tell(void *userdata)
     return ftell(p->fp);
 }
 
-static AudioPlayBuffer *my_avi_player_choose_audio_buffer(my_avi_player *p)
+#if WINDOWS_DEMO
+static int apb_is_playing(AudioPlayBuffer *apb)
 {
-    AudioPlayBuffer *ret = &p->a_play_buf[p->cur_audio_play_buffer ++];
-    p->cur_audio_play_buffer %= PLAY_BUFFERS;
-    return ret;
+    return (apb->whdr.dwFlags & WHDR_INQUEUE) == WHDR_INQUEUE;
+}
+
+static int apb_is_playable(AudioPlayBuffer *apb, my_avi_player *p)
+{
+    if (apb_is_playing(apb)) return 0;
+    else if (apb->data_size >= p->min_playable_size) return 1;
+}
+
+static int apb_test_and_set_to_idle(AudioPlayBuffer *apb, my_avi_player *p)
+{
+    if (apb_is_playing(apb)) return 0;
+    if ((apb->whdr.dwFlags & WHDR_PREPARED) == WHDR_PREPARED)
+    {
+        if ((apb->whdr.dwFlags & WHDR_DONE) != WHDR_DONE) return 0;
+        MMRESULT mmr = waveOutUnprepareHeader(p->AudioDev, &apb->whdr, sizeof apb->whdr);
+        switch (mmr)
+        {
+        case WAVERR_STILLPLAYING:
+            return 0;
+        case MMSYSERR_NOERROR:
+            return 1;
+        default:
+            fprintf(stderr, "[ERROR] `waveOutUnprepareHeader()` returns %u.\n", mmr);
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static AudioPlayBuffer *my_avi_player_choose_idle_audio_buffer(my_avi_player *p)
+{
+    for (int i = 0; i < PLAY_BUFFERS; i++)
+    {
+        AudioPlayBuffer *ret = &p->a_play_buf[i];
+        if (apb_test_and_set_to_idle(ret, p))
+        {
+            p->audio_buffer_is_saturate = 0;
+            return ret;
+        }
+    }
+    p->audio_buffer_is_saturate = 1;
+    return NULL;
+}
+
+static int my_avi_player_is_audio_buffers_all_idle(my_avi_player *p)
+{
+    for (int i = 0; i < PLAY_BUFFERS; i++)
+    {
+        AudioPlayBuffer *ret = &p->a_play_buf[i];
+        if (!apb_test_and_set_to_idle(ret, p))
+        {
+            return 0;
+        }
+    }
+    p->audio_buffer_is_saturate = 0;
+    return 1;
 }
 
 static void my_avi_player_poll_window_events(my_avi_player *p)
 {
-#if WINDOWS_DEMO
     MSG msg;
     while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
     {
@@ -107,8 +161,8 @@ static void my_avi_player_poll_window_events(my_avi_player *p)
             DispatchMessageW(&msg);
         }
     }
-#endif
 }
+#endif
 
 static void my_avi_player_on_video_cb(fsize_t offset, fsize_t length, void *userdata)
 {
