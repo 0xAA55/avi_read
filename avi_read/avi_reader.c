@@ -172,6 +172,84 @@ static int rel_seek(avi_reader *r, fssize_t offset)
 	return 1;
 }
 
+static int must_match_s(avi_stream_reader *r, const char *fourcc)
+{
+	char buf[5] = { 0 };
+	if (r->f_read(buf, 4, r->userdata) != 4) return 0;
+	if (memcmp(buf, fourcc, 4))
+	{
+		FATAL_PRINTF(r->r, "Matching FourCC failed: %s != %s" NL, buf, fourcc);
+		return 0;
+	}
+	return 1;
+}
+
+static int must_read_s(avi_stream_reader *r, void *buffer, size_t len)
+{
+	fssize_t rl = r->f_read(buffer, len, r->userdata);
+	if (rl < 0)
+	{
+		FATAL_PRINTF(r->r, "Read %u bytes failed." NL, (unsigned int)len);
+		return 0;
+	}
+	else if (rl != len)
+	{
+		FATAL_PRINTF(r->r, "Tried to read %u bytes, got %u bytes." NL, (unsigned int)len, (unsigned int)rl);
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+static int must_tell_s(avi_stream_reader *r, fsize_t *cur_pos)
+{
+	fssize_t told = r->f_tell(r->userdata);
+	if (told < 0)
+	{
+		FATAL_PRINTF(r->r, "`f_tell()` failed." NL);
+		return 0;
+	}
+	else
+	{
+		*cur_pos = (fsize_t)told;
+		return 1;
+	}
+}
+
+static int must_seek_s(avi_stream_reader *r, fsize_t target)
+{
+	fssize_t told = r->f_seek(target, r->userdata);
+	if (told < 0)
+	{
+		FATAL_PRINTF(r->r, "`f_seek(%x)` failed." NL, target);
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+static int rel_seek_s(avi_stream_reader *r, fssize_t offset)
+{
+	fssize_t cur_pos = r->f_tell(r->userdata);
+	if (cur_pos < 0)
+	{
+		FATAL_PRINTF(r->r, "`f_tell()` failed." NL);
+		return 0;
+	}
+	fsize_t target = (fsize_t)(cur_pos + offset);
+	cur_pos = r->f_seek(target, r->userdata);
+	if (cur_pos < 0)
+	{
+		FATAL_PRINTF(r->r, "`f_seek(%x)` failed." NL, target);
+		return 0;
+	}
+	return 1;
+}
+
 static void default_logprintf(void *userdata, const char *format, ...)
 {
 	va_list ap;
@@ -526,6 +604,10 @@ int avi_get_stream_reader
 	s_out->stream_id = stream_id;
 	s_out->stream_info = &r->avi_stream_info[stream_id];
 	s_out->cur_stream_packet_index = 0;
+	s_out->userdata = r->userdata;
+	s_out->f_read = r->f_read;
+	s_out->f_seek = r->f_seek;
+	s_out->f_tell = r->f_tell;
 	s_out->on_video_compressed = on_video_compressed;
 	s_out->on_video = on_video;
 	s_out->on_palette_change = on_palette_change;
@@ -535,6 +617,38 @@ int avi_get_stream_reader
 ErrRet:
 	if (r) FATAL_PRINTF(r, "Reading AVI file failed." NL);
 	if (s_out) memset(s_out, 0, sizeof  *s_out);
+	return 0;
+}
+
+int avi_stream_reader_set_read_seek_tell
+(
+	avi_stream_reader *s,
+	void *userdata,
+	read_cb f_read,
+	seek_cb f_seek,
+	tell_cb f_tell
+)
+{
+	avi_reader *r;
+#if AVI_ROBUSTINESS
+	if (!s)
+	{
+		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
+		r = &fake_r;
+		FATAL_PRINTF(r, "Param `avi_stream_reader *s` must not be NULL. Otherwise you are setting the callback functions for the void?" NL);
+		r = NULL;
+		goto ErrRet;
+	}
+#endif
+	r = s->r;
+
+	s->userdata = userdata;
+	if (f_read) s->f_read = f_read;
+	if (f_seek) s->f_seek = f_seek;
+	if (f_tell) s->f_tell = f_tell;
+	return 1;
+ErrRet:
+	if (r) FATAL_PRINTF(r, "`avi_stream_reader_set_read_seek_tell()` failed." NL);
 	return 0;
 }
 
@@ -659,14 +773,14 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 		fsize_t packet_index = 0;
 		do
 		{
-			if (!must_read(r, fourcc_buf, 4)) goto ErrRet;
-			if (!must_read(r, &chunk_size, 4)) goto ErrRet;
-			if (!must_tell(r, &chunk_start)) goto ErrRet;
+			if (!must_read_s(s, fourcc_buf, 4)) goto ErrRet;
+			if (!must_read_s(s, &chunk_size, 4)) goto ErrRet;
+			if (!must_tell_s(s, &chunk_start)) goto ErrRet;
 			chunk_end = chunk_start + chunk_size;
 
 			if (!memcmp(fourcc_buf, "LIST", 4))
 			{
-				if (!must_match(r, "rec ")) goto ErrRet;
+				if (!must_match_s(s, "rec ")) goto ErrRet;
 				DEBUG_PRINTF(r, "Seeking into a LIST(rec) chunk." NL);
 				// Move inside the LIST chunk to find the packet.
 				continue; // Not to skip the chunk.
@@ -704,7 +818,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 				}
 			}
 			// Skip the current chunk
-			if (!must_seek(r, chunk_end)) goto ErrRet;
+			if (!must_seek_s(s, chunk_end)) goto ErrRet;
 		} while (chunk_end < r->end_of_file);
 		if (!packet_found)
 		{

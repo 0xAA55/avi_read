@@ -127,7 +127,15 @@ typedef struct
 	/// The current packet length
 	fsize_t cur_packet_len;
 
+	/// When `r->log_level` is `PRINT_DEBUG`, normally the functions associated to the stream will print debug messages.
+	/// Set this to 1 to mute the debug messages from this specific stream.
+	int mute_cur_stream_debug_print;
+
 	/// Your callback functions, when the packet is going to be processed, the callback functions will be called.
+	void *userdata; /// The data to pass to your callback functions.
+	read_cb f_read; /// Your `read()` callback function pointer.
+	seek_cb f_seek; /// Your `seek()` callback function pointer.
+	tell_cb f_tell; /// Your `tell()` callback function pointer.
 	on_stream_data_cb on_video_compressed;	/// Compressed video frame got
 	on_stream_data_cb on_video;				/// Uncompressed video frame (probably BMP) got
 	on_stream_data_cb on_palette_change;	/// Palette change for your video (If the AVI file is using color index as pixel data, the actual color in RGB form comes from the palette)
@@ -183,7 +191,31 @@ int avi_get_stream_reader
 );
 
 /// <summary>
-/// Call the callback functions of a `avi_stream_reader` struct for the current packet.
+/// Set read()/seek()/tell() and userdata specificly for the stream reader.
+/// This function allows you to use a different fd/file handle to read the stream.
+/// Using different fd/file handle will increase the IO performance of the `avi_stream_reader`.
+/// Passing NULL to the callback functions will not change the previous callback function.
+/// </summary>
+/// <param name="userdata">An object pass to your callback functions.</param>
+/// <param name="f_read">Your `read()` function for me to read the AVI file.</param>
+/// <param name="f_seek">Your `seek()` function for me to change the absolute read position.</param>
+/// <param name="f_tell">Your `tell()` function for me to retrieve the current read position.</param>
+/// <returns>0 for fail, nonzero for success.</returns>
+int avi_stream_reader_set_read_seek_tell
+(
+	avi_stream_reader *s,
+	void *userdata,
+	read_cb f_read,
+	seek_cb f_seek,
+	tell_cb f_tell
+);
+
+/// <summary>
+/// Call the callback functions of an `avi_stream_reader` struct for the current packet.
+/// After calling `avi_get_stream_reader()`, you have a freshly created stream reader that has the first packet of your stream.
+/// But the callback functions were not called at that time.
+/// After you have prepared to play the AVI file, the first thing is to call this function to process your first packet.
+/// Then your callback functions are called to process the first packet.
 /// </summary>
 /// <param name="s">Your stream reader</param>
 /// <returns>0 for fail, nonzero for success.</returns>
