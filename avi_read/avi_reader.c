@@ -632,6 +632,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 				s->cur_packet_offset = offset;
 				s->cur_packet_len = index.dwSize;
 				s->cur_stream_packet_index = packet_no + 1;
+				s->is_no_more_packets = 0;
 				packet_found = 1;
 				if (call_receive_functions)
 				{
@@ -642,8 +643,8 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 		}
 		if (!packet_found)
 		{
-			FATAL_PRINTF(r, "Could not find packet %"PRIfsize_t" for the stream id %d." NL, packet_no + 1, stream_id);
-			goto ErrRet;
+			s->is_no_more_packets = 1;
+			WARN_PRINTF(r, "Could not find packet %"PRIfsize_t" for the stream id %d." NL, packet_no + 1, stream_id);
 		}
 	}
 	else
@@ -685,6 +686,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 					s->cur_packet_offset = chunk_start;
 					s->cur_packet_len = chunk_size;
 					s->cur_stream_packet_index = packet_no + 1;
+					s->is_no_more_packets = 0;
 					packet_found = 1;
 					if (call_receive_functions)
 					{
@@ -706,8 +708,8 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 		} while (chunk_end < r->end_of_file);
 		if (!packet_found)
 		{
-			FATAL_PRINTF(r, "No packet found for stream id %d after full file traversal." NL, stream_id);
-			goto ErrRet;
+			s->is_no_more_packets = 1;
+			WARN_PRINTF(r, "No packet found for stream id %d after full file traversal." NL, stream_id);
 		}
 	}
 
