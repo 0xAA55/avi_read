@@ -12,33 +12,10 @@
 // My demo can also help you find out how do you to implement an AVI player for your device.
 
 #ifdef WINDOWS_DEMO
-#include <Windows.h>
-#include <olectl.h>
-#include <ocidl.h>
-#define PLAY_BUFFERS 3
-int my_avi_player_create_window(void *my_avi_player, uint32_t target_width, uint32_t target_height);
-void my_avi_player_destroy_window(void *my_avi_player);
-void my_avi_player_show_video_frame(void *my_avi_player, fsize_t offset, fsize_t length);
-void my_avi_player_play_audio_frame(void *my_avi_player, fsize_t offset, fsize_t length);
-#ifdef _WIN64
-#  define PRIsize_t PRIu64
-#else
-#  define PRIsize_t PRIu32
-#endif
+#include "windows_demo_guts.h"
 #endif
 
-static uint64_t get_super_precise_time_in_ns();
-
-
-#if WINDOWS_DEMO
-typedef struct
-{
-    WAVEHDR whdr;
-    void *buffer;
-    size_t buffer_size;
-    size_t data_size;
-}AudioPlayBuffer;
-#endif
+uint64_t get_super_precise_time_in_ns();
 
 typedef struct my_avi_player_s
 {
@@ -49,144 +26,122 @@ typedef struct my_avi_player_s
     uint32_t video_height;
 
     FILE *fp;
+    FILE *fp_video;
+    FILE *fp_audio;
 
 #if WINDOWS_DEMO
-    HINSTANCE hInstance;
-    LPCWSTR WindowClass;
-    HWND Window;
-    HDC hDC;
-    HWAVEOUT AudioDev;
-    AudioPlayBuffer a_play_buf[PLAY_BUFFERS];
-    size_t min_playable_size;
-    int audio_buffer_is_playing;
-    int audio_buffer_is_saturate;
+    int windows_guts_initialized;
+    WindowsDemoGuts windows_guts;
 #endif
     int should_quit;
     int exit_code;
 } my_avi_player;
 
+#if WINDOWS_DEMO
+int my_avi_player_init_windows_guts(my_avi_player *p)
+{
+    int ret = windows_demo_create_window(&p->windows_guts, p->video_width, p->video_height, &p->s_video, &p->s_audio);
+    return ret;
+}
+void my_avi_player_cleanup_windows_guts(my_avi_player *p)
+{
+    windows_demo_destroy_window(&p->windows_guts);
+}
+#endif
+
+void my_avi_player_show_video_frame(void *userdata, fsize_t offset, fsize_t length)
+{
+#if WINDOWS_DEMO
+    my_avi_player *p = userdata;
+    windows_demo_show_video_frame(&p->windows_guts, offset, length);
+#else
+    printf("On play video frame at: %"PRIfsize_t", %"PRIfsize_t"\n", offset, length);
+#endif
+}
+
+void my_avi_player_play_audio_packet(void *userdata, fsize_t offset, fsize_t length)
+{
+#if WINDOWS_DEMO
+    my_avi_player *p = userdata;
+    windows_demo_play_audio_packet(&p->windows_guts, offset, length, p->s_audio.is_no_more_packets);
+#else
+    printf("On play audio frame at: %"PRIfsize_t", %"PRIfsize_t"\n", offset, length);
+#endif
+}
+
 static fssize_t my_avi_player_read(void *buffer, size_t len, void *userdata)
 {
-    my_avi_player *p = (my_avi_player *)userdata;
+    my_avi_player *p = userdata;
     return (fssize_t)fread(buffer, 1, len, p->fp);
 }
 
 static fssize_t my_avi_player_seek(fsize_t offset, void *userdata)
 {
-    my_avi_player *p = (my_avi_player *)userdata;
+    my_avi_player *p = userdata;
     return fseek(p->fp, offset, SEEK_SET) ? -1 : (fssize_t)offset;
 }
 
 static fssize_t my_avi_player_tell(void *userdata)
 {
-    my_avi_player *p = (my_avi_player *)userdata;
+    my_avi_player *p = userdata;
     return ftell(p->fp);
 }
 
-#if WINDOWS_DEMO
-static int apb_is_playing(AudioPlayBuffer *apb)
+static fssize_t my_avi_video_read(void *buffer, size_t len, void *userdata)
 {
-    return (apb->whdr.dwFlags & WHDR_INQUEUE) == WHDR_INQUEUE;
+    my_avi_player *p = userdata;
+    return (fssize_t)fread(buffer, 1, len, p->fp_video);
 }
 
-static int apb_is_playable(AudioPlayBuffer *apb, my_avi_player *p)
+static fssize_t my_avi_video_seek(fsize_t offset, void *userdata)
 {
-    if (apb_is_playing(apb)) return 0;
-    else if (apb->data_size >= p->min_playable_size) return 1;
+    my_avi_player *p = userdata;
+    return fseek(p->fp_video, offset, SEEK_SET) ? -1 : (fssize_t)offset;
 }
 
-static int apb_test_and_set_to_idle(AudioPlayBuffer *apb, my_avi_player *p)
+static fssize_t my_avi_video_tell(void *userdata)
 {
-    if (apb_is_playing(apb)) return 0;
-    if ((apb->whdr.dwFlags & WHDR_PREPARED) == WHDR_PREPARED)
-    {
-        if ((apb->whdr.dwFlags & WHDR_DONE) != WHDR_DONE) return 0;
-        MMRESULT mmr = waveOutUnprepareHeader(p->AudioDev, &apb->whdr, sizeof apb->whdr);
-        switch (mmr)
-        {
-        case WAVERR_STILLPLAYING:
-            return 0;
-        case MMSYSERR_NOERROR:
-            return 1;
-        default:
-            fprintf(stderr, "[ERROR] `waveOutUnprepareHeader()` returns %u.\n", mmr);
-            return 0;
-        }
-    }
-    return 1;
+    my_avi_player *p = userdata;
+    return ftell(p->fp_video);
 }
 
-static AudioPlayBuffer *my_avi_player_choose_idle_audio_buffer(my_avi_player *p)
+static fssize_t my_avi_audio_read(void *buffer, size_t len, void *userdata)
 {
-    for (int i = 0; i < PLAY_BUFFERS; i++)
-    {
-        AudioPlayBuffer *ret = &p->a_play_buf[i];
-        if (apb_test_and_set_to_idle(ret, p))
-        {
-            p->audio_buffer_is_saturate = 0;
-            return ret;
-        }
-    }
-    p->audio_buffer_is_saturate = 1;
-    return NULL;
+    my_avi_player *p = userdata;
+    return (fssize_t)fread(buffer, 1, len, p->fp_audio);
 }
 
-static int my_avi_player_is_audio_buffers_all_idle(my_avi_player *p)
+static fssize_t my_avi_audio_seek(fsize_t offset, void *userdata)
 {
-    for (int i = 0; i < PLAY_BUFFERS; i++)
-    {
-        AudioPlayBuffer *ret = &p->a_play_buf[i];
-        if (!apb_test_and_set_to_idle(ret, p))
-        {
-            return 0;
-        }
-    }
-    p->audio_buffer_is_saturate = 0;
-    return 1;
+    my_avi_player *p = userdata;
+    return fseek(p->fp_audio, offset, SEEK_SET) ? -1 : (fssize_t)offset;
 }
 
-static void my_avi_player_poll_window_events(my_avi_player *p)
+static fssize_t my_avi_audio_tell(void *userdata)
 {
-    MSG msg;
-    while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
-    {
-        TranslateMessage(&msg);
-        if (msg.message == WM_QUIT)
-        {
-            p->should_quit = 1;
-            p->exit_code = (int)msg.wParam;
-        }
-        else
-        {
-            DispatchMessageW(&msg);
-        }
-    }
+    my_avi_player *p = userdata;
+    return ftell(p->fp_audio);
 }
-#endif
 
 static void my_avi_player_on_video_cb(fsize_t offset, fsize_t length, void *userdata)
 {
-#if WINDOWS_DEMO
     my_avi_player_show_video_frame(userdata, offset, length);
-#else
-    printf("On video packet at %"PRIfsize_t" with length %"PRIfsize_t"\n", offset, length);
-#endif
 }
 
 static void my_avi_player_on_audio_cb(fsize_t offset, fsize_t length, void *userdata)
 {
-#if WINDOWS_DEMO
-    my_avi_player_play_audio_frame(userdata, offset, length);
-#else
-    printf("On audio packet at %"PRIfsize_t" with length %"PRIfsize_t"\n", offset, length);
-#endif
+    my_avi_player_play_audio_packet(userdata, offset, length);
 }
 
 static int my_avi_player_open(my_avi_player *p, const char *path)
 {
     memset(p, 0, sizeof *p);
     p->fp = fopen(path, "rb");
-    if (!p->fp) return 0;
+    if (!p->fp) goto ErrRet;
+    p->fp_video = fopen(path, "rb");
+    if (!p->fp_video) goto ErrRet;
+    p->fp_audio = fopen(path, "rb");
+    if (!p->fp_audio) goto ErrRet;
 
     // Initialize the AVI reader
     if (!avi_reader_init
@@ -198,7 +153,10 @@ static int my_avi_player_open(my_avi_player *p, const char *path)
         my_avi_player_tell,
         NULL,
         PRINT_INFO
-    )) return 0;
+    )) goto ErrRet;
+
+    if (!avi_stream_reader_set_read_seek_tell(&p->s_video, p, my_avi_video_read, my_avi_video_seek, my_avi_video_tell)) goto ErrRet;
+    if (!avi_stream_reader_set_read_seek_tell(&p->s_audio, p, my_avi_audio_read, my_avi_audio_seek, my_avi_audio_tell)) goto ErrRet;
 
     // I want to dedicate my stream reader 0 to the video stream,
     //   and my stream reader 1 to the audio stream.
@@ -255,21 +213,27 @@ static int my_avi_player_open(my_avi_player *p, const char *path)
 
     p->video_width = p->r.avih.dwWidth;
     p->video_height = p->r.avih.dwHeight;
-    if (p->s_audio.stream_info)
-    {
-        avi_stream_info *audio_stream_info = p->s_audio.stream_info;
-        p->min_playable_size = (size_t)audio_stream_info->audio_format.nSamplesPerSec *
-            audio_stream_info->audio_format.nBlockAlign /
-            20; // Every second play 20 buffers.
-    }
 
 #ifdef WINDOWS_DEMO
-    if (!my_avi_player_create_window(p, p->video_width, p->video_height)) goto ErrRet;
+    if (!my_avi_player_init_windows_guts(p)) goto ErrRet;
 #endif
 
     return 1;
 ErrRet:
     return 0;
+}
+
+static void my_avi_player_close(my_avi_player *p)
+{
+    if (p->fp) fclose(p->fp);
+    if (p->fp_video) fclose(p->fp_video);
+    if (p->fp_audio) fclose(p->fp_audio);
+
+#if WINDOWS_DEMO
+    my_avi_player_cleanup_windows_guts(p);
+#endif
+
+    memset(p, 0, sizeof * p);
 }
 
 static int my_avi_player_play(my_avi_player *p)
@@ -279,56 +243,88 @@ static int my_avi_player_play(my_avi_player *p)
     avi_stream_info *h_video = s_video->stream_info;
     avi_stream_info *h_audio = s_audio->stream_info;
     wave_format_ex *af = &h_audio->audio_format;
-    fsize_t cur_samples_extracted = 0;
-    int v_available = (s_video != 0);
-    int a_available = (s_audio != 0);
+    int have_video = (h_video != 0);
+    int have_audio = (h_audio != 0);
+
+#ifdef WINDOWS_DEMO
+    if (have_audio)
+    {
+        avi_stream_reader_call_callback_functions(s_audio);
+        while (!p->windows_guts.audio_buffer_is_playing)
+        {
+            printf("A");
+            if (!avi_stream_reader_move_to_next_packet(s_audio, 1)) return 0;
+        }
+    }
+#endif
 
     uint64_t start_time = get_super_precise_time_in_ns();
-    while (1)
+    avi_stream_reader_call_callback_functions(s_video);
+    while (have_video || have_audio)
     {
         uint64_t cur_time = get_super_precise_time_in_ns();
-        uint64_t delta_time = cur_time - start_time;
+        uint64_t relative_time_ms = (cur_time - start_time) / 1000000;
 
-        uint64_t v_rate_ns = 0;
-        uint32_t a_sample_rate = 0;
-
-        if (h_video) v_rate_ns = (uint64_t)h_video->stream_header.dwRate * 1000000 / h_video->stream_header.dwScale;
-        if (h_audio) a_sample_rate = (uint32_t)h_audio->stream_header.dwRate / h_audio->stream_header.dwScale;
-
-        uint32_t target_v_frame_no = 0;
-        uint32_t target_a_sample_no = 0;
-
-        if (h_video) target_v_frame_no = (uint32_t)(delta_time / v_rate_ns);
-        if (h_audio) target_a_sample_no = (uint32_t)(delta_time * a_sample_rate / 1000000000);
-
-        int v_advanced = 0;
-        int a_advanced = 0;
-        if (h_video)
+        if (have_video)
         {
-            while (s_video->cur_stream_packet_index < target_v_frame_no)
+            uint64_t v_rate = h_video->stream_header.dwRate;
+            uint64_t v_scale = h_video->stream_header.dwScale;
+            uint64_t target_v_frame_no = (relative_time_ms * v_rate) / (1000 * v_scale);
+
+            if (!s_video->is_no_more_packets && s_video->cur_stream_packet_index < target_v_frame_no)
             {
-                v_advanced = 1;
-                v_available = avi_stream_reader_move_to_next_packet(s_video, 0);
-                if (!v_available) break;
+                avi_stream_reader_move_to_next_packet(s_video, 0);
+                if (s_video->cur_stream_packet_index == target_v_frame_no)
+                {
+                    printf("V");
+                    avi_stream_reader_call_callback_functions(s_video);
+                }
+                else
+                {
+                    printf("v");
+                }
             }
         }
-        if (h_audio)
+
+        if (have_audio)
         {
-            while (cur_samples_extracted < target_a_sample_no)
+            int new_packet_got = 0;
+            int num_playing = 0;
+            int num_idle = 0;
+
+#if WINDOWS_DEMO
+            // Make sure all buffers are used for playing
+            if (!s_audio->is_no_more_packets)
             {
-                a_advanced = 1;
-                a_available = avi_stream_reader_move_to_next_packet(s_audio, 0);
-                if (!a_available) break;
-                fsize_t cur_packet_samples = s_audio->cur_packet_len / af->nBlockAlign;
-                cur_samples_extracted += cur_packet_samples;
+                windows_demo_audio_buffers_get_status(&p->windows_guts, &num_idle, &num_playing);
+                if (num_playing < AUDIO_PLAY_BUFFERS)
+                {
+                    printf("A");
+                    avi_stream_reader_move_to_next_packet(s_audio, 1);
+                }
             }
+#else
+            printf("TODO: Process your audio stream.\n");
+#endif
         }
-        if (v_available && v_advanced) avi_stream_reader_call_callback_functions(s_video);
-        if (a_available && a_advanced) avi_stream_reader_call_callback_functions(s_audio);
 
-        if ((!v_available) && (!a_available)) break;
+        if ((have_video && s_video->is_no_more_packets) &&
+            (have_audio && s_audio->is_no_more_packets) &&
+#if WINDOWS_DEMO
+            windows_demo_is_audio_buffers_all_idle(&p->windows_guts) &&
+#endif
+            1)
+        {
+            // Finished playback, return gracefully
+            p->should_quit = 1;
+            p->exit_code = 0;
+        }
 
-        my_avi_player_poll_window_events(p);
+#if WINDOWS_DEMO
+        windows_demo_poll_window_events(&p->windows_guts);
+        p->should_quit = p->windows_guts.should_quit;
+        p->exit_code = p->windows_guts.exit_code;
+#endif
         if (p->should_quit) return p->exit_code;
     }
 
@@ -338,287 +334,12 @@ static int my_avi_player_play(my_avi_player *p)
 int main(int argc, char**argv)
 {
     my_avi_player p;
-    printf("Warning: this is just a test program.\n");
+    fprintf(stderr, "[WARN]: this is just a test program.\n");
     if (!my_avi_player_open(&p, argv[1])) return 1;
-    return my_avi_player_play(&p);
+    int exit_code = my_avi_player_play(&p);
+    my_avi_player_close(&p);
+    return exit_code;
 }
-
-#ifdef WINDOWS_DEMO
-LRESULT CALLBACK my_avi_player_window_proc_W(HWND hWnd, uint32_t msg, WPARAM wp, LPARAM lp)
-{
-    switch (msg)
-    {
-    case WM_CREATE:
-        do
-        {
-            CREATESTRUCTW *cs = (CREATESTRUCTW *)lp;
-            SetWindowLongPtrW(hWnd, 0, (LONG_PTR)cs->lpCreateParams);
-        } while (0);
-        break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProcW(hWnd, msg, wp, lp);
-    }
-    return 0;
-}
-
-int my_avi_player_create_window(void *player, uint32_t target_width, uint32_t target_height)
-{
-    my_avi_player *p = (my_avi_player *)player;
-
-    // https://devblogs.microsoft.com/oldnewthing/20041025-00/?p=37483
-    extern HINSTANCE __ImageBase;
-    p->hInstance = __ImageBase;
-
-    WNDCLASSEXW WCExW = {
-        sizeof(WNDCLASSEXW),
-        0,
-        my_avi_player_window_proc_W,
-        0,
-        sizeof (p),
-        p->hInstance,
-        LoadCursorW(NULL, IDC_ARROW),
-        LoadIconW(NULL, IDI_APPLICATION),
-        (HBRUSH)(COLOR_WINDOW + 1),
-        NULL,
-        L"AVI_Player_Class",
-        LoadIconW(NULL, IDI_APPLICATION),
-    };
-
-    p->WindowClass = (LPCWSTR)RegisterClassExW(&WCExW);
-    if (!p->WindowClass)
-    {
-        fprintf(stderr, "[FATAL] RegisterClassExW() failed.\n");
-        goto ErrRet;
-    }
-
-    p->Window = CreateWindowExW(0, p->WindowClass, L"AVI(MJPEG + PCM only) player", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, target_width, target_height, NULL, NULL, p->hInstance, player);
-    if (!p->Window)
-    {
-        fprintf(stderr, "[FATAL] CreateWindowExW() failed.\n");
-        goto ErrRet;
-    }
-    RECT rc_w, rc_c;
-    GetWindowRect(p->Window, &rc_w);
-    GetClientRect(p->Window, &rc_c);
-    uint32_t border_width = (rc_w.right - rc_w.left) - (rc_c.right - rc_c.left);
-    uint32_t border_height = (rc_w.bottom - rc_w.top) - (rc_c.bottom - rc_c.top);
-    if (!MoveWindow(p->Window, rc_w.left, rc_w.top, target_width + border_width, target_height + border_height, FALSE))
-    {
-        // If the window can't be resized to the target size, it'll show a cropped AVI video.
-        // I don't want this, I'd rather quit. Showing cropped video isn't an option.
-        fprintf(stderr, "[FATAL] MoveWindow() failed.\n");
-        goto ErrRet;
-    }
-    ShowWindow(p->Window, SW_SHOW);
-
-    // Use this to draw picture to data via GDI
-    p->hDC = GetDC(p->Window);
-    if (!p->hDC)
-    {
-        fprintf(stderr, "[FATAL] GetDC() failed.\n");
-        goto ErrRet;
-    }
-
-    // Initialize COM. I want to use the retro one `OleLoadPicture()`
-    if (FAILED(CoInitialize(NULL)))
-    {
-        fprintf(stderr, "[FATAL] CoInitialize() failed.\n");
-        goto ErrRet;
-    }
-
-    return 1;
-ErrRet:
-    my_avi_player_destroy_window(player);
-    return 0;
-}
-
-void my_avi_player_destroy_window(void* player)
-{
-    my_avi_player *p = (my_avi_player *)player;
-    if (p->Window && p->hDC) ReleaseDC(p->Window, p->hDC);
-    if (p->Window) DestroyWindow(p->Window);
-    if (p->WindowClass) UnregisterClassW(p->WindowClass, p->hInstance);
-    CoUninitialize();
-    if (p->AudioDev)
-    {
-        waveOutReset(p->AudioDev);
-        for (size_t i = 0; i < PLAY_BUFFERS; i++)
-        {
-            MMRESULT mr;
-            AudioPlayBuffer *playbuf = &p->a_play_buf[i];
-            WAVEHDR *pwhdr = &playbuf->whdr;
-            if (pwhdr->dwFlags & WHDR_PREPARED)
-            {
-                do
-                {
-                    mr = waveOutUnprepareHeader(p->AudioDev, pwhdr, sizeof * pwhdr);
-                } while (mr == WAVERR_STILLPLAYING);
-                assert(mr == MMSYSERR_NOERROR);
-            }
-            free(playbuf->buffer);
-            playbuf->buffer = NULL;
-            playbuf->buffer_size = 0;
-            memset(pwhdr, 0, sizeof *pwhdr);
-        }
-        waveOutClose(p->AudioDev);
-    }
-    p->cur_audio_play_buffer = 0;
-    p->hDC = 0;
-    p->Window = 0;
-    p->WindowClass = 0;
-}
-
-void my_avi_player_show_video_frame(void *player, fsize_t offset, fsize_t length)
-{
-    my_avi_player *p = (my_avi_player *)player;
-
-    // I'm using the very very old way to convert JPEG to BMP, because it supports C.
-    // Older than WIC, and older than Gdiplus, older than C++ smart pointers.
-    HGLOBAL my_jpeg_picture_memory = GlobalAlloc(GMEM_MOVEABLE, length);
-    if (!my_jpeg_picture_memory) goto Exit;
-
-    void* ptr = GlobalLock(my_jpeg_picture_memory);
-    if (!ptr) goto Exit;
-
-    my_avi_player_seek(offset, player);
-    my_avi_player_read(ptr, length, player);
-    GlobalUnlock(my_jpeg_picture_memory);
-
-    // Here comes the COM part.
-    HRESULT hr = S_OK;
-    IStream *stream = NULL;
-    hr = CreateStreamOnHGlobal(my_jpeg_picture_memory, TRUE, &stream);
-    if (FAILED(hr)) goto Exit;
-
-    IPicture *picture = NULL;
-    hr = OleLoadPicture(stream, length, FALSE, &IID_IPicture, &picture);
-    if (FAILED(hr)) goto Exit;
-
-    HDC hPictureDC = NULL;
-    int32_t src_w, src_h;
-    hr = picture->lpVtbl->get_Width(picture, &src_w);
-    if (FAILED(hr)) goto Exit;
-
-    hr = picture->lpVtbl->get_Height(picture, &src_h);
-    if (FAILED(hr)) goto Exit;
-
-    RECT rc = {0, 0, p->video_width, p->video_height };
-    hr = picture->lpVtbl->Render(picture, p->hDC, 0, p->video_height - 1, (int32_t)p->video_width, -(int32_t)p->video_height, 0, 0, src_w, src_h, &rc);
-    if (FAILED(hr)) goto Exit;
-
-Exit:
-    if (stream) stream->lpVtbl->Release(stream);
-    if (picture) picture->lpVtbl->Release(picture);
-    if (my_jpeg_picture_memory) GlobalFree(my_jpeg_picture_memory);
-}
-
-void my_avi_player_play_audio_frame(void *player, fsize_t offset, fsize_t length)
-{
-    my_avi_player *p = (my_avi_player *)player;
-
-    // If the audio device was not opened yet
-    if (!p->AudioDev)
-    {
-        // Extract the full audio format data with extension data to feed the `waveOutOpen()`
-        avi_stream_info *audio_stream_info = p->s_audio.stream_info;
-        size_t format_len = audio_stream_info->stream_format_len;
-        void *format_ptr = malloc(format_len);
-        if (!format_ptr) goto Exit;
-        my_avi_player_seek(audio_stream_info->stream_format_offset, p);
-        my_avi_player_read(format_ptr, format_len, p);
-        MMRESULT mr = waveOutOpen(&p->AudioDev, WAVE_MAPPER, format_ptr, 0, 0, CALLBACK_NULL | WAVE_ALLOWSYNC);
-        switch (mr)
-        {
-        case MMSYSERR_NOERROR:
-            free(format_ptr);
-            break;
-        case WAVERR_BADFORMAT:
-            fprintf(stderr, "[FATAL] waveOutOpen(): WAVERR_BADFORMAT.\n");
-        default:
-            free(format_ptr);
-            goto Exit;
-        }
-        printf("[INFO] Audio device opended\n");
-    }
-    void *audio_data = NULL;
-    WAVEHDR *pwhdr = NULL;
-    MMRESULT mr;
-    AudioPlayBuffer *playbuf;
-
-    while (1)
-    {
-        // Randomly pick an audio play buffer that's not playing currently.
-        playbuf = my_avi_player_choose_audio_buffer(p);
-        pwhdr = &playbuf->whdr;
-
-        // This playback buffer is totally untouched, use it.
-        if (!pwhdr->dwFlags) break;
-
-        // This playback buffer is being played, so don't use it.
-        if (pwhdr->dwFlags & WHDR_INQUEUE) continue;
-
-        // This playback buffer is `done`, then give it a new job.
-        if (pwhdr->dwFlags & WHDR_DONE)
-        {
-            if ((pwhdr->dwFlags & WHDR_PREPARED) == WHDR_PREPARED)
-            {
-                mr = waveOutUnprepareHeader(p->AudioDev, pwhdr, sizeof * pwhdr);
-                if (mr == WAVERR_STILLPLAYING)
-                {
-                    // It said it's done but returns "I'm still playing", skip it.
-                    continue;
-                }
-                assert(mr == MMSYSERR_NOERROR);
-            }
-            break;
-        }
-    }
-    // If the length of the buffer should be changed, don't use `realloc()`, just use a new memory area.
-    if (playbuf->buffer_size != length)
-    {
-        free(playbuf->buffer);
-        playbuf->buffer_size = 0;
-        playbuf->buffer = malloc(length);
-        if (!playbuf->buffer) goto Exit;
-        playbuf->buffer_size = length;
-    }
-    audio_data = playbuf->buffer;
-
-    // Write the extracted audio data to the buffer
-    my_avi_player_seek(offset, player);
-    my_avi_player_read(audio_data, length, player);
-
-    // Link the WAVEHDR to the buffer
-    pwhdr->lpData = audio_data;
-    pwhdr->dwBufferLength = (uint32_t)length;
-
-    // Prepare and play
-    mr = waveOutPrepareHeader(p->AudioDev, pwhdr, sizeof * pwhdr);
-    assert(mr == MMSYSERR_NOERROR);
-    mr = waveOutWrite(p->AudioDev, pwhdr, sizeof *pwhdr);
-    assert(mr == MMSYSERR_NOERROR);
-
-Exit:;
-}
-
-static uint64_t get_super_precise_time_in_ns()
-{
-    uint64_t counter = 0, freq = 0;
-    QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
-    QueryPerformanceCounter((LARGE_INTEGER *)&counter);
-    return counter * 1000000000 / freq;
-}
-
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "gdi32.lib")
-#pragma comment(lib, "ole32.lib")
-#pragma comment(lib, "oleaut32.lib")
-#pragma comment(lib, "winmm.lib")
-#endif
 
 #if __unix__
 #include <time.h>
