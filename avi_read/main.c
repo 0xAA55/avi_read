@@ -60,9 +60,9 @@ typedef struct my_avi_player_s
     size_t min_playable_size;
     int audio_buffer_is_playing;
     int audio_buffer_is_saturate;
+#endif
     int should_quit;
     int exit_code;
-#endif
 } my_avi_player;
 
 static fssize_t my_avi_player_read(void *buffer, size_t len, void *userdata)
