@@ -197,4 +197,11 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
 /// <returns>0 for fail, nonzero for success.</returns>
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions);
 
+/// <summary>
+/// Check if the stream reader is no more packets to read.
+/// </summary>
+/// <param name="s">The stream reader</param>
+/// <returns>1 for yes, 0 for no. If yes, then there's no more packets to read. -1 for bad parameters.</returns>
+int avi_stream_reader_is_end_of_stream(avi_stream_reader *s);
+
 #endif

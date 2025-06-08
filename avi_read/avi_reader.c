@@ -717,3 +717,20 @@ ErrRet:
 	return 0;
 }
 
+int avi_stream_reader_is_end_of_stream(avi_stream_reader *s)
+{
+	avi_reader *r = NULL;
+#if AVI_ROBUSTINESS
+	if (!s)
+	{
+		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
+		r = &fake_r;
+		FATAL_PRINTF(r, "Param `avi_stream_reader *r` must not be NULL. You don't want to check if the void is end of stream." NL);
+		r = NULL;
+		return 1; // Yes, the void don't have any packets for you to read.
+	}
+#endif
+	r = s->r;
+	return s->is_no_more_packets;
+}
+
