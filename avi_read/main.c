@@ -255,6 +255,13 @@ static int my_avi_player_open(my_avi_player *p, const char *path)
 
     p->video_width = p->r.avih.dwWidth;
     p->video_height = p->r.avih.dwHeight;
+    if (p->s_audio.stream_info)
+    {
+        avi_stream_info *audio_stream_info = p->s_audio.stream_info;
+        p->min_playable_size = (size_t)audio_stream_info->audio_format.nSamplesPerSec *
+            audio_stream_info->audio_format.nBlockAlign /
+            20; // Every second play 20 buffers.
+    }
 
 #ifdef WINDOWS_DEMO
     if (!my_avi_player_create_window(p, p->video_width, p->video_height)) goto ErrRet;
