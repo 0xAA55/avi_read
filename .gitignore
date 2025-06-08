@@ -2,3 +2,4 @@
 out/
 intermediate/
 test_videos/
+*.vcxproj.user
