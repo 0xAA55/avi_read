@@ -57,7 +57,9 @@ typedef struct my_avi_player_s
     HDC hDC;
     HWAVEOUT AudioDev;
     AudioPlayBuffer a_play_buf[PLAY_BUFFERS];
-    int cur_audio_play_buffer;
+    size_t min_playable_size;
+    int audio_buffer_is_playing;
+    int audio_buffer_is_saturate;
     int should_quit;
     int exit_code;
 #endif
