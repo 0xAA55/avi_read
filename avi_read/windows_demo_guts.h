@@ -379,7 +379,7 @@ int windows_demo_create_window(WindowsDemoGuts *w, uint32_t target_width, uint32
 
     // https://devblogs.microsoft.com/oldnewthing/20041025-00/?p=37483
     extern HINSTANCE __ImageBase;
-    w->hInstance = __ImageBase;
+    w->hInstance = &__ImageBase;
 
     windows_demo_set_source(w, s_video, s_audio);
 
