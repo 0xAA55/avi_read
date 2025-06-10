@@ -677,12 +677,12 @@ void _jmp_to_new_stack(void *stack_buffer, size_t stack_size, void(*function_to_
     fprintf(stderr, "[UNIMPLEMENTED] Save your current stack pointer register to a volatile register whichever you'd like to use, the volatile register stores your original stack pointer and could help you to retrieve your parameters;\n");
     fprintf(stderr, "[UNIMPLEMENTED] Set your stack pointer register to the end of my stack buffer: `(size_t)stack_buffer + stack_size`;\n");
     fprintf(stderr, "[UNIMPLEMENTED] After moving to the new stack, save your 5th and 6th paramters to the new stack;\n");
-    fprintf(stderr, "[UNIMPLEMENTED] Retrieve your 4th parameter `userdata` from the original stack;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Retrieve your 4th parameter `userdata` from the original stack (using the saved stack pointer in the volatile register);\n");
     fprintf(stderr, "[UNIMPLEMENTED] Your 3rd parameter is a pointer to a callback function (the function to run on the new stack). Call it and pass `userdata`. NOTE: This function will destroy your volatile register as usual occasion;\n");
     fprintf(stderr, "[UNIMPLEMENTED] After calling the function, balance your stack;\n");
-    fprintf(stderr, "[UNIMPLEMENTED] Retrieve your 5th and 6th parameter from previously saved on the new stack, these parameters are for returning to your previous stack via a `longjmp()`;\n");
-    fprintf(stderr, "[UNIMPLEMENTED] IMPORTANT: Both stacks are actively changing, you can't just set your stack pointer register to the saved old stack pointer;\n");
-    fprintf(stderr, "[UNIMPLEMENTED] Safely return to the original stack context by using the `jmp_buf` and `longjmp_value` parameters (the `longjmp()` must be implemented in your shellcode)\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Retrieve your 5th (`jmp_buf`) and 6th (`longjmp_value`) parameters from where you saved them on the new stack, these parameters are for returning to your previous stack via a `longjmp()`;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] IMPORTANT: Both stacks are actively changing, do not attempt to restore the stack pointer directly;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Implement and execute a `longjmp(jmp_buf, longjmp_value)` to return to the original stack\n");
     assert(0);
 #endif
     static DWORD dwOldProtect = 0;
