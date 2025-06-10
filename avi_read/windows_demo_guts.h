@@ -563,12 +563,6 @@ uint64_t get_super_precise_time_in_ns()
     return counter * 1000000000 / freq;
 }
 
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "gdi32.lib")
-#pragma comment(lib, "ole32.lib")
-#pragma comment(lib, "oleaut32.lib")
-#pragma comment(lib, "winmm.lib")
-
 #ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
 void _on_syscommand_sizemove(WindowsDemoGuts *w)
 {
@@ -692,5 +686,11 @@ void _jmp_to_new_stack(void *stack_buffer, size_t stack_size, void(*function_to_
 }
 
 #endif // USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "winmm.lib")
 
 #endif
