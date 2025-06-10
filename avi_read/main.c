@@ -332,8 +332,11 @@ static int my_avi_player_play(my_avi_player *p)
 
 #if WINDOWS_DEMO
         windows_demo_poll_window_events(&p->windows_guts);
-        p->should_quit = p->windows_guts.should_quit;
-        p->exit_code = p->windows_guts.exit_code;
+        if (p->windows_guts.should_quit)
+        {
+            p->should_quit = 1;
+            p->exit_code = p->windows_guts.exit_code;
+        }
 #endif
         if (p->should_quit) return p->exit_code;
     }
