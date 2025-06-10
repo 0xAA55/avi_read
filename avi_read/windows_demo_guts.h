@@ -115,8 +115,9 @@ void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
     hr = picture->lpVtbl->get_Height(picture, &src_h);
     if (FAILED(hr)) goto Exit;
 
-    RECT rc = { 0, 0, w->video_width, w->video_height };
-    hr = picture->lpVtbl->Render(picture, w->hDC, 0, w->video_height - 1, (int32_t)w->video_width, -(int32_t)w->video_height, 0, 0, src_w, src_h, &rc);
+    RECT rc;
+    GetClientRect(w->Window, &rc);
+    hr = picture->lpVtbl->Render(picture, w->hDC, 0, rc.bottom - 1, (int32_t)rc.right, -(int32_t)rc.bottom, 0, 0, src_w, src_h, NULL);
     if (FAILED(hr)) goto Exit;
 
 Exit:
