@@ -7,9 +7,17 @@
 #define AUDIO_PLAY_BUFFERS 4
 #define AUDIO_BUFFERS_PER_SEC 20
 
+#ifndef NO_HACKING_WAY_WORKAROUND_IN_DEMO
+#define USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+#endif
+
 #include <Windows.h>
 #include <olectl.h>
 #include <ocidl.h>
+
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+#include <setjmp.h>
+#endif
 
 #ifdef _WIN64
 #  define PRIsize_t PRIu64
@@ -49,7 +57,24 @@ typedef struct
     int audio_buffer_is_playing;
     int should_quit;
     int exit_code;
+
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+    void *hack_new_stack;
+    size_t hack_new_stack_size;
+    volatile int hack_is_on;
+    volatile int hack_is_returned_from_timer;
+    WPARAM hack_syscommand;
+    jmp_buf hack_jb_returning;
+    jmp_buf hack_jb_reentering;
+    jmp_buf hack_jb_exit_hacking;
+#endif
 } WindowsDemoGuts;
+
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+void _my_longjmp(jmp_buf jb, int value);
+void _jmp_to_new_stack(void *stack_buffer, size_t stack_size, void(*function_to_run)(void *userdata), void *userdata, jmp_buf returning, int longjmp_val);
+void _on_syscommand_sizemove(WindowsDemoGuts *w);
+#endif
 
 int apb_is_playing(AudioPlayBuffer *apb)
 {
@@ -298,6 +323,18 @@ void windows_demo_audio_buffers_get_status(WindowsDemoGuts *w, int *num_idle, in
 void windows_demo_poll_window_events(WindowsDemoGuts *w)
 {
     MSG msg;
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+    if (setjmp(w->hack_jb_exit_hacking) == 1)
+    {
+        KillTimer(w->Window, 1);
+        w->hack_is_on = 0;
+    }
+    if (w->hack_is_on)
+    {
+        if (w->hack_is_returned_from_timer)
+            _my_longjmp(w->hack_jb_reentering, 1);
+    }
+#endif
     while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
@@ -311,10 +348,17 @@ void windows_demo_poll_window_events(WindowsDemoGuts *w)
             DispatchMessageW(&msg);
         }
     }
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+    if (setjmp(w->hack_jb_returning) == 1)
+    {
+        return;
+    }
+#endif
 }
 
 LRESULT CALLBACK windows_demo_window_proc_W(HWND hWnd, uint32_t msg, WPARAM wp, LPARAM lp)
 {
+    WindowsDemoGuts *w = NULL;
     switch (msg)
     {
     case WM_CREATE:
@@ -324,6 +368,65 @@ LRESULT CALLBACK windows_demo_window_proc_W(HWND hWnd, uint32_t msg, WPARAM wp, 
             SetWindowLongPtrW(hWnd, 0, (LONG_PTR)cs->lpCreateParams);
         } while (0);
         break;
+    case WM_ENTERSIZEMOVE:
+        break;
+    case WM_EXITSIZEMOVE:
+        break;
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+    case WM_SYSCOMMAND:
+        switch (GET_SC_WPARAM(wp))
+        {
+        case SC_MOVE:
+        case SC_SIZE:
+            w = (void *)GetWindowLongPtrW(hWnd, 0);
+            assert(w->hack_is_on == 0);
+            w->hack_syscommand = wp;
+            if (!w->hack_new_stack)
+            {
+                w->hack_new_stack_size = (size_t)1 << 16;
+                w->hack_new_stack = _aligned_malloc(w->hack_new_stack_size, 16);
+            }
+            if (w->hack_new_stack)
+            {
+                w->hack_is_on = 1;
+                SetTimer(w->Window, 1, 1, NULL);
+                _jmp_to_new_stack(w->hack_new_stack, w->hack_new_stack_size, _on_syscommand_sizemove, w, w->hack_jb_exit_hacking, 1);
+            }
+            else
+            {
+                w->hack_new_stack_size = 0;
+            }
+            break;
+        default:
+            return DefWindowProcW(hWnd, msg, wp, lp);
+        }
+        break;
+    case WM_MOVE:
+    case WM_SIZING:
+    case WM_SIZE:
+    case WM_TIMER:
+        if (msg != WM_TIMER || wp == 1)
+        {
+            w = (void *)GetWindowLongPtrW(hWnd, 0);
+            if (w->hack_is_on)
+            {
+                int j = setjmp(w->hack_jb_reentering);
+                switch (j)
+                {
+                case 0:
+                    w->hack_is_returned_from_timer = 1;
+                    _my_longjmp(w->hack_jb_returning, 1);
+                    break;
+                case 1:
+                    break;
+                default:
+                    assert(0);
+                }
+                w->hack_is_returned_from_timer = 0;
+            }
+        }
+        break;
+#endif
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -358,6 +461,11 @@ void windows_demo_destroy_window(WindowsDemoGuts *w)
     w->hDC = 0;
     w->Window = 0;
     w->WindowClass = 0;
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+    _aligned_free(w->hack_new_stack);
+    w->hack_new_stack = 0;
+    w->hack_new_stack_size = 0;
+#endif
     CoUninitialize();
 }
 
@@ -460,5 +568,129 @@ uint64_t get_super_precise_time_in_ns()
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
 #pragma comment(lib, "winmm.lib")
+
+#ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
+void _on_syscommand_sizemove(WindowsDemoGuts *w)
+{
+    DefWindowProcW(w->Window, WM_SYSCOMMAND, w->hack_syscommand, 0);
+}
+
+__declspec(noreturn)
+void _my_longjmp(jmp_buf jb, int value)
+{
+#ifdef _M_IX86
+    static const uint32_t shellcode_my_longjmp[] =
+    {
+        0x0424548B,
+        0x0824448B,
+        0x8301F883,
+        0x2A8B00D0,
+        0x8B045A8B,
+        0x728B087A,
+        0x10628B0C,
+        0xFF04C483,
+        0x90901462,
+    };
+#elif defined(_M_X64)
+    static const uint64_t shellcode_my_longjmp[] =
+    {
+        0x4808598B48D08948,
+        0x4818698B4810618B,
+        0x4C28798B4820718B,
+        0x4C38698B4C30618B,
+        0x0F48798B4C40718B,
+        0x5C69D9E2DB5851AE,
+        0x6F0F6660716F0F66,
+        0x80816F0F44667079,
+        0x896F0F4466000000,
+        0x6F0F446600000090,
+        0x0F4466000000A091,
+        0x4466000000B0996F,
+        0x66000000C0A16F0F,
+        0x000000D0A96F0F44,
+        0x0000E0B16F0F4466,
+        0x00F0B96F0F446600,
+        0x9090905061FF0000,
+    };
+#else
+    // If your computer is not x86 nor x64, implement your own `longjmp()` shellcode for your CPU.
+    longjmp(jb, value);
+#endif
+    static DWORD dwOldProtect = 0;
+    if (!dwOldProtect) VirtualProtect((void *)shellcode_my_longjmp, sizeof shellcode_my_longjmp, PAGE_EXECUTE_READ, &dwOldProtect);
+    void(*my_longjmp)(jmp_buf jb, int value) = (void *)shellcode_my_longjmp;
+    my_longjmp(jb, value);
+}
+
+__declspec(noreturn)
+void _jmp_to_new_stack(void *stack_buffer, size_t stack_size, void(*function_to_run)(void *userdata), void *userdata, jmp_buf returning, int longjmp_val)
+{
+#ifdef _M_IX86
+    static const uint32_t shellcode_jmp_to_new_stack[] =
+    {
+        0x608be089,
+        0x08600304,
+        0xff1870ff,
+        0x70ff1470,
+        0x0c50ff10,
+        0x6804c483,
+        0xdeadbeef,
+        0x909002eb,
+        0x0424548b,
+        0x0824448b,
+        0x8301f883,
+        0x2a8b00d0,
+        0x8b045a8b,
+        0x728b087a,
+        0x10628b0c,
+        0xff04c483,
+        0x90901462,
+    };
+#elif defined(_M_X64)
+    static const uint64_t shellcode_jmp_to_new_stack[] =
+    {
+        0x0148cc8948e08948,
+        0x4c2870ff3070ffd4,
+        0xff4120ec8348c989,
+        0xeb5a5920c48348d0,
+        0x9090909090909007,
+        0x4808598b48d08948,
+        0x4818698b4810618b,
+        0x4c28798b4820718b,
+        0x4c38698b4c30618b,
+        0x0f48798b4c40718b,
+        0x5c69d9e2db5851ae,
+        0x6f0f6660716f0f66,
+        0x80816f0f44667079,
+        0x896f0f4466000000,
+        0x6f0f446600000090,
+        0x0f4466000000a091,
+        0x4466000000b0996f,
+        0x66000000c0a16f0f,
+        0x000000d0a96f0f44,
+        0x0000e0b16f0f4466,
+        0x00f0b96f0f446600,
+        0x9090905061ff0000,
+    };
+#else
+    fprintf(stderr, "[UNIMPLEMENTED] Please provide your shellcode for your CPU to implement `jmp_to_new_stack()` by doing these steps:\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Save your current stack pointer register to a volatile register whichever you'd like to use, the volatile register stores your original stack pointer and could help you to retrieve your parameters;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Set your stack pointer register to the end of my stack buffer: `(size_t)stack_buffer + stack_size`;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] After moving to the new stack, save your 5th and 6th paramters to the new stack;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Retrieve your 4th parameter `userdata` from the original stack;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Your 3rd parameter is a pointer to a callback function (the function to run on the new stack). Call it and pass `userdata`. NOTE: This function will destroy your volatile register as usual occasion;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] After calling the function, balance your stack;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Retrieve your 5th and 6th parameter from previously saved on the new stack, these parameters are for returning to your previous stack via a `longjmp()`;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] IMPORTANT: Both stacks are actively changing, you can't just set your stack pointer register to the saved old stack pointer;\n");
+    fprintf(stderr, "[UNIMPLEMENTED] Safely return to the original stack context by using the `jmp_buf` and `longjmp_value` parameters (the `longjmp()` must be implemented in your shellcode)\n");
+    assert(0);
+#endif
+    static DWORD dwOldProtect = 0;
+    if (!dwOldProtect) VirtualProtect((void *)shellcode_jmp_to_new_stack, sizeof shellcode_jmp_to_new_stack, PAGE_EXECUTE_READ, &dwOldProtect);
+    void(*jmp_to_new_stack)(void *, size_t, void(*)(void *), void *, jmp_buf, int) = (void *)shellcode_jmp_to_new_stack;
+    jmp_to_new_stack(stack_buffer, stack_size, function_to_run, userdata, returning, longjmp_val);
+}
+
+#endif // USE_HACKING_WAY_MSGBLOCKING_WORKAROUND
 
 #endif
