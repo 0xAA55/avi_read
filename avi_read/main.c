@@ -245,7 +245,7 @@ static int my_avi_player_play(my_avi_player *p)
     wave_format_ex *af = &h_audio->audio_format;
     int have_video = (h_video != 0);
     int have_audio = (h_audio != 0);
-    uint64_t audio_byte_pos = 0;
+    volatile uint64_t audio_byte_pos = 0;
 
 #ifdef WINDOWS_DEMO
     if (have_audio)
