@@ -1,6 +1,6 @@
 # AVI Reader Library (Parser only, non-decoding)
 
-English | [简体中文](Readme-CN.md)
+Chinglish | [简体中文](Readme-CN.md)
 
 Parse AVI files to enumerate streams and retrieve stream packets.
 
