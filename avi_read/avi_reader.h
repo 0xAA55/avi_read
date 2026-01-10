@@ -220,6 +220,48 @@ int avi_map_stream_readers
 );
 
 /// <summary>
+/// Checkout if the stream format is indexed BMP format
+/// </summary>
+/// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
+/// <returns>Non-zero if true</returns>
+int avi_is_stream_indexed_color(avi_stream_reader *s);
+
+/// <summary>
+/// Checkout if the stream format is RGB555
+/// </summary>
+/// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
+/// <returns>Non-zero if true</returns>
+int avi_is_stream_RGB555(avi_stream_reader *s);
+
+/// <summary>
+/// Checkout if the stream format is RGB565
+/// </summary>
+/// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
+/// <returns>Non-zero if true</returns>
+int avi_is_stream_RGB565(avi_stream_reader *s);
+
+/// <summary>
+/// Checkout if the stream format is RGB888
+/// </summary>
+/// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
+/// <returns>Non-zero if true</returns>
+int avi_is_stream_RGB888(avi_stream_reader *s);
+
+/// <summary>
+/// Checkout if the stream format is JPEG
+/// </summary>
+/// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
+/// <returns>Non-zero if true</returns>
+int avi_is_stream_JPEG(avi_stream_reader *s);
+
+/// <summary>
+/// Checkout if the stream format is PNG
+/// </summary>
+/// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
+/// <returns>Non-zero if true</returns>
+int avi_is_stream_PNG(avi_stream_reader *s);
+
+/// <summary>
 /// Set read()/seek()/tell() and userdata specificly for the stream reader.
 /// This function allows you to use a different fd/file handle to read the stream.
 /// Using different fd/file handle will increase the IO performance of the `avi_stream_reader`.

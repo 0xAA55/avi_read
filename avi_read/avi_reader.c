@@ -635,6 +635,126 @@ int avi_map_stream_readers
 	return 1;
 }
 
+int avi_is_stream_indexed_color(avi_stream_reader *s)
+{
+	avi_stream_info *si;
+	if (!s) return 0;
+	si = s->stream_info;
+	if (!si) return 0;
+	if (!si->format_data_is_valid) return 0;
+	switch (si->bitmap_format.BMIF.biCompression)
+	{
+	case BI_RGB:
+	case BI_RLE8:
+	case BI_RLE4:
+		if (si->bitmap_format.BMIF.biBitCount >= 1 && si->bitmap_format.BMIF.biBitCount <= 8) return 1;
+	default:
+		return 0;
+	}
+}
+
+int avi_is_stream_RGB555(avi_stream_reader *s)
+{
+	avi_stream_info *si;
+	if (!s) return 0;
+	si = s->stream_info;
+	if (!si) return 0;
+	if (!si->format_data_is_valid) return 0;
+	switch (si->bitmap_format.BMIF.biCompression)
+	{
+	case BI_RGB:
+		if (si->bitmap_format.BMIF.biBitCount == 16) return 1;
+	case BI_BITFIELDS:
+		if (si->bitmap_format.BMIF.biBitCount == 16)
+		{
+			if (si->bitmap_format.bitfields[0] == 0x7C00 &&
+				si->bitmap_format.bitfields[1] == 0x03E0 &&
+				si->bitmap_format.bitfields[2] == 0x001F &&
+				si->bitmap_format.bitfields[3] == 0x0000) return 1;
+		}
+	default:
+		return 0;
+	}
+}
+
+int avi_is_stream_RGB565(avi_stream_reader *s)
+{
+	avi_stream_info *si;
+	if (!s) return 0;
+	si = s->stream_info;
+	if (!si) return 0;
+	if (!si->format_data_is_valid) return 0;
+	switch (si->bitmap_format.BMIF.biCompression)
+	{
+	case BI_BITFIELDS:
+		if (si->bitmap_format.BMIF.biBitCount == 16)
+		{
+			if (si->bitmap_format.bitfields[0] == 0xF800 &&
+				si->bitmap_format.bitfields[1] == 0x07E0 &&
+				si->bitmap_format.bitfields[2] == 0x001F &&
+				si->bitmap_format.bitfields[3] == 0x0000) return 1;
+		}
+	default:
+		return 0;
+	}
+}
+
+int avi_is_stream_RGB888(avi_stream_reader *s)
+{
+	avi_stream_info *si;
+	if (!s) return 0;
+	si = s->stream_info;
+	if (!si) return 0;
+	if (!si->format_data_is_valid) return 0;
+	switch (si->bitmap_format.BMIF.biCompression)
+	{
+	case BI_RGB:
+		if (si->bitmap_format.BMIF.biBitCount == 24) return 1;
+	case BI_BITFIELDS:
+		if (si->bitmap_format.BMIF.biBitCount == 24)
+		{
+			if (si->bitmap_format.bitfields[0] == 0xFF0000 &&
+				si->bitmap_format.bitfields[1] == 0x00FF00 &&
+				si->bitmap_format.bitfields[2] == 0x0000FF &&
+				si->bitmap_format.bitfields[3] == 0x000000) return 1;
+		}
+	default:
+		return 0;
+	}
+}
+
+int avi_is_stream_JPEG(avi_stream_reader *s)
+{
+	avi_stream_info *si;
+	if (!s) return 0;
+	si = s->stream_info;
+	if (!si) return 0;
+	if (!si->format_data_is_valid) return 0;
+	switch (si->bitmap_format.BMIF.biCompression)
+	{
+	case BI_JPEG:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+int avi_is_stream_PNG(avi_stream_reader *s)
+{
+	avi_stream_info *si;
+	if (!s) return 0;
+	si = s->stream_info;
+	if (!si) return 0;
+	if (!si->format_data_is_valid) return 0;
+	switch (si->bitmap_format.BMIF.biCompression)
+	{
+	case BI_PNG:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 void avi_stream_reader_set_read_seek_tell
 (
 	avi_stream_reader *s,
