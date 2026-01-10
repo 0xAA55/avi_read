@@ -199,6 +199,8 @@ int avi_get_stream_reader
 /// Iterate through all of the streams and find the first video stream, the first audio stream for you.
 /// </summary>
 /// <param name="r">A pointer to the `avi_reader` struct you had it initialized before.</param>
+/// <param name="userdata_video">Your data to pass to your callback functions for the video stream reader.</param>
+/// <param name="userdata_audio">Your data to pass to your callback functions for the audio stream reader.</param>
 /// <param name="on_video_compressed">Your function to receive a compressed video packet. Passing NULL is allowed.</param>
 /// <param name="on_video">Your function to receive an uncompressed video packet. Passing NULL is allowed.</param>
 /// <param name="on_palette_change">Your function to receive a palette change event packet. Passing NULL is allowed.</param>
