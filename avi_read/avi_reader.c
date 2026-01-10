@@ -837,6 +837,15 @@ fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_i
 	return (fsize_t)((time_in_ms * v_rate) / (1000 * v_scale));
 }
 
+fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t time_in_ms)
+{
+	avi_stream_info *h_audio;
+	if (!s) return 0;
+	h_audio = s->stream_info;
+	if (!h_audio) return 0;
+	return (fsize_t)(time_in_ms * h_audio->audio_format.nAvgBytesPerSec / 1000);
+}
+
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions)
 {
 	avi_reader *r = NULL;

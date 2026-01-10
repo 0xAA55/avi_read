@@ -317,6 +317,15 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
 fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms);
 
 /// <summary>
+/// Calculate the target audio block index of a specific millisecond.
+/// * A block is `(sample number) / channels`
+/// </summary>
+/// <param name="s">Your stream reader</param>
+/// <param name="time_in_ms">The target time</param>
+/// <returns>The target audio byte offset of the stream</returns>
+fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t time_in_ms);
+
+/// <summary>
 /// Move to the next packet, then call the callback functions for you to receive the packet.
 /// If you set `cur_packet_offset` to zero, then it will move to the first packet of the stream.
 /// </summary>
