@@ -173,10 +173,10 @@ int avi_reader_init
 /// </summary>
 /// <param name="r">A pointer to the `avi_reader` struct you had it initialized before.</param>
 /// <param name="stream_id">The stream index you want to </param>
-/// <param name="on_video_compressed">Your function to receive a compressed video packet.</param>
-/// <param name="on_video">Your function to receive an uncompressed video packet.</param>
-/// <param name="on_palette_change">Your function to receive a palette change event packet.</param>
-/// <param name="on_audio">Your function to receive an audio packet.</param>
+/// <param name="on_video_compressed">Your function to receive a compressed video packet. Passing NULL is allowed.</param>
+/// <param name="on_video">Your function to receive an uncompressed video packet. Passing NULL is allowed.</param>
+/// <param name="on_palette_change">Your function to receive a palette change event packet. Passing NULL is allowed.</param>
+/// <param name="on_audio">Your function to receive an audio packet. Passing NULL is allowed.</param>
 /// <param name="s_out">Your `avi_stream_reader` to be initialized.</param>
 /// <returns>0 for fail, nonzero for success.</returns>
 int avi_get_stream_reader
@@ -196,10 +196,11 @@ int avi_get_stream_reader
 /// Using different fd/file handle will increase the IO performance of the `avi_stream_reader`.
 /// Passing NULL to the callback functions will not change the previous callback function.
 /// </summary>
+/// <param name="s">Your stream reader</param>
 /// <param name="userdata">An object pass to your callback functions.</param>
-/// <param name="f_read">Your `read()` function for me to read the AVI file.</param>
-/// <param name="f_seek">Your `seek()` function for me to change the absolute read position.</param>
-/// <param name="f_tell">Your `tell()` function for me to retrieve the current read position.</param>
+/// <param name="f_read">Your `read()` function for me to read the AVI file. Passing NULL is allowed.</param>
+/// <param name="f_seek">Your `seek()` function for me to change the absolute read position. Passing NULL is allowed.</param>
+/// <param name="f_tell">Your `tell()` function for me to retrieve the current read position. Passing NULL is allowed.</param>
 /// <returns>0 for fail, nonzero for success.</returns>
 int avi_stream_reader_set_read_seek_tell
 (
