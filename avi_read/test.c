@@ -5,6 +5,12 @@
 
 #ifdef _MSC_VER
 #define WINDOWS_DEMO 1
+#undef BI_RGB
+#undef BI_RLE8
+#undef BI_RLE4
+#undef BI_BITFIELDS
+#undef BI_JPEG
+#undef BI_PNG
 #endif
 
 // Question about why to use Visual Studio 2022 to develop this library, at this point, is very clear.
