@@ -827,6 +827,17 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 	return 1;
 }
 
+uint64_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms)
+{
+	avi_stream_info *h_video;
+	if (!s) return 0;
+	h_video = s->stream_info;
+	if (!h_video) return 0;
+	uint64_t v_rate = h_video->stream_header.dwRate;
+	uint64_t v_scale = h_video->stream_header.dwScale;
+	return (time_in_ms * v_rate) / (1000 * v_scale);
+}
+
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions)
 {
 	avi_reader *r = NULL;
