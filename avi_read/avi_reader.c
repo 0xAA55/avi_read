@@ -757,7 +757,7 @@ int avi_is_stream_PNG(avi_stream_reader *s)
 
 int avi_apply_palette_change(avi_stream_reader *s, void *pc)
 {
-	size_t di = 0;
+	uint32_t di = 0;
 	avi_stream_info *sif;
 	avi_palette_change_max_size *pc_data = pc;
 	if (!s || !pc) return 0;
@@ -765,7 +765,7 @@ int avi_apply_palette_change(avi_stream_reader *s, void *pc)
 	if (!sif) return 0;
 	if (!avi_is_stream_indexed_color(s)) return 0;
 
-	for (size_t si = 0; si < pc_data->num_entries; si++)
+	for (uint32_t si = 0; si < pc_data->num_entries; si++)
 	{
 		di = si + pc_data->first_entry;
 		sif->bitmap_format.palette[di] = pc_data->palette[si];
