@@ -177,7 +177,8 @@ int avi_reader_init
 /// Get the specified stream reader to read the packets of the specified stream.
 /// </summary>
 /// <param name="r">A pointer to the `avi_reader` struct you had it initialized before.</param>
-/// <param name="stream_id">The stream index you want to </param>
+/// <param name="userdata">Your data to pass to your callback functions for the stream reader.</param>
+/// <param name="stream_id">The stream index you want to bind</param>
 /// <param name="on_video_compressed">Your function to receive a compressed video packet. Passing NULL is allowed.</param>
 /// <param name="on_video">Your function to receive an uncompressed video packet. Passing NULL is allowed.</param>
 /// <param name="on_palette_change">Your function to receive a palette change event packet. Passing NULL is allowed.</param>
@@ -187,6 +188,7 @@ int avi_reader_init
 int avi_get_stream_reader
 (
 	avi_reader *r,
+	void *userdata,
 	int stream_id,
 	on_stream_data_cb on_video_compressed,
 	on_stream_data_cb on_video,

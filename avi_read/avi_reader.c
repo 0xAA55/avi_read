@@ -553,6 +553,7 @@ static void default_on_stream_data_cb(fsize_t offset, fsize_t length, void *user
 int avi_get_stream_reader
 (
 	avi_reader *r,
+	void *userdata,
 	int stream_id,
 	on_stream_data_cb on_video_compressed,
 	on_stream_data_cb on_video,
@@ -584,7 +585,7 @@ int avi_get_stream_reader
 	s_out->stream_id = stream_id;
 	s_out->stream_info = &r->avi_stream_info[stream_id];
 	s_out->cur_stream_packet_index = 0;
-	s_out->userdata = r->userdata;
+	s_out->userdata = userdata;
 	s_out->f_read = r->f_read;
 	s_out->f_seek = r->f_seek;
 	s_out->f_tell = r->f_tell;
@@ -621,17 +622,15 @@ int avi_map_stream_readers
 		avi_stream_info *stream_info = &r->avi_stream_info[i];
 		if (video_out && !video_out->r && avi_stream_is_video(stream_info))
 		{
-			if (!avi_get_stream_reader(r, (int)i, on_video_compressed, on_video, on_palette_change, on_audio, video_out)) return 0;
+			if (!avi_get_stream_reader(r, userdata_video, (int)i, on_video_compressed, on_video, on_palette_change, on_audio, video_out)) return 0;
 		}
 		if (audio_out && !audio_out->r && avi_stream_is_audio(stream_info))
 		{
-			if (!avi_get_stream_reader(r, (int)i, on_video_compressed, on_video, on_palette_change, on_audio, audio_out)) return 0;
+			if (!avi_get_stream_reader(r, userdata_audio, (int)i, on_video_compressed, on_video, on_palette_change, on_audio, audio_out)) return 0;
 		}
 		if ((!video_out || (video_out && video_out->r)) &&
 			(!audio_out || (audio_out && audio_out->r))) break;
 	}
-	if (video_out && video_out->r) video_out->userdata = userdata_video;
-	if (audio_out && audio_out->r) audio_out->userdata = userdata_audio;
 	return 1;
 }
 
