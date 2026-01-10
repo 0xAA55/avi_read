@@ -196,6 +196,30 @@ int avi_get_stream_reader
 );
 
 /// <summary>
+/// Iterate through all of the streams and find the first video stream, the first audio stream for you.
+/// </summary>
+/// <param name="r">A pointer to the `avi_reader` struct you had it initialized before.</param>
+/// <param name="on_video_compressed">Your function to receive a compressed video packet. Passing NULL is allowed.</param>
+/// <param name="on_video">Your function to receive an uncompressed video packet. Passing NULL is allowed.</param>
+/// <param name="on_palette_change">Your function to receive a palette change event packet. Passing NULL is allowed.</param>
+/// <param name="on_audio">Your function to receive an audio packet. Passing NULL is allowed.</param>
+/// <param name="video_out">Your `avi_stream_reader` for video to be initialized. Passing NULL is allowed.</param>
+/// <param name="audio_out">Your `avi_stream_reader` for audio to be initialized. Passing NULL is allowed.</param>
+/// <returns>0 for fail, nonzero for success.</returns>
+int avi_map_stream_readers
+(
+	avi_reader *r,
+	void *userdata_video,
+	void *userdata_audio,
+	on_stream_data_cb on_video_compressed,
+	on_stream_data_cb on_video,
+	on_stream_data_cb on_palette_change,
+	on_stream_data_cb on_audio,
+	avi_stream_reader *video_out,
+	avi_stream_reader *audio_out
+);
+
+/// <summary>
 /// Set read()/seek()/tell() and userdata specificly for the stream reader.
 /// This function allows you to use a different fd/file handle to read the stream.
 /// Using different fd/file handle will increase the IO performance of the `avi_stream_reader`.

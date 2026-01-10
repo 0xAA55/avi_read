@@ -599,6 +599,42 @@ ErrRet:
 	return 0;
 }
 
+int avi_map_stream_readers
+(
+	avi_reader *r,
+	void *userdata_video,
+	void *userdata_audio,
+	on_stream_data_cb on_video_compressed,
+	on_stream_data_cb on_video,
+	on_stream_data_cb on_palette_change,
+	on_stream_data_cb on_audio,
+	avi_stream_reader *video_out,
+	avi_stream_reader *audio_out
+)
+{
+	if (!r) return 0;
+	if (!video_out && !audio_out) return 0;
+	if (video_out) video_out->r = NULL;
+	if (audio_out) audio_out->r = NULL;
+	for (size_t i = 0; i < r->num_streams; i++)
+	{
+		avi_stream_info *stream_info = &r->avi_stream_info[i];
+		if (video_out && !video_out->r && avi_stream_is_video(stream_info))
+		{
+			if (!avi_get_stream_reader(r, (int)i, on_video_compressed, on_video, on_palette_change, on_audio, video_out)) return 0;
+		}
+		if (audio_out && !audio_out->r && avi_stream_is_audio(stream_info))
+		{
+			if (!avi_get_stream_reader(r, (int)i, on_video_compressed, on_video, on_palette_change, on_audio, audio_out)) return 0;
+		}
+		if ((!video_out || (video_out && video_out->r)) &&
+			(!audio_out || (audio_out && audio_out->r))) break;
+	}
+	if (video_out && video_out->r) video_out->userdata = userdata_video;
+	if (audio_out && audio_out->r) audio_out->userdata = userdata_audio;
+	return 1;
+}
+
 void avi_stream_reader_set_read_seek_tell
 (
 	avi_stream_reader *s,
