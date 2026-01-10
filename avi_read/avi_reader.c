@@ -868,8 +868,8 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 		{
 			int stream_no;
 			char fourcc_buf[5] = { 0 };
-			if (!must_seek_s(s, r->idx_offset + i * (sizeof index))) goto ErrRet;
-			if (!must_read_s(s, &index, sizeof index)) goto ErrRet;
+			if (!must_seek(r, r->idx_offset + i * (sizeof index))) goto ErrRet;
+			if (!must_read(r, &index, sizeof index)) goto ErrRet;
 			*(uint32_t *)fourcc_buf = index.dwChunkId;
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
 			if (stream_no == stream_id)
@@ -905,7 +905,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 		{
 			DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d via file traversal." NL, packet_no, stream_id);
 		}
-		if (!must_seek(r, s->cur_packet_offset + s->cur_packet_len)) goto ErrRet;
+		if (!must_seek_s(s, s->cur_packet_offset + s->cur_packet_len)) goto ErrRet;
 
 		char fourcc_buf[5] = { 0 };
 		uint32_t chunk_size;
