@@ -100,6 +100,14 @@ typedef struct
 	};
 } bitmap_header_max_size;
 
+typedef struct
+{
+	uint8_t first_entry;
+	uint8_t num_entries;
+	uint16_t flags;
+	palette_entry palette[256];
+} avi_palette_change_max_size;
+
 #pragma pack(pop)
 
 #endif
