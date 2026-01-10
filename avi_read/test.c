@@ -164,58 +164,7 @@ static int my_avi_player_open(my_avi_player *p, const char *path)
     avi_stream_reader_set_read_seek_tell(&p->s_video, p, my_avi_video_read, my_avi_video_seek, my_avi_video_tell);
     avi_stream_reader_set_read_seek_tell(&p->s_audio, p, my_avi_audio_read, my_avi_audio_seek, my_avi_audio_tell);
 
-    // I want to dedicate my stream reader 0 to the video stream,
-    //   and my stream reader 1 to the audio stream.
-    // Note: While AVI files can contain multiple streams (e.g. adult/child versions, multi-language audio),
-    //   this demo intentionally only handles the first video and audio streams for simplicity.
-    // You'd probably start with the same approach, right?
-    for (size_t i = 0; i < p->r.num_streams; i++)
-    {
-        avi_stream_info* stream_info = &p->r.avi_stream_info[i];
-        if (avi_stream_is_video(stream_info))
-        {
-            if (p->s_video.r == NULL)
-            {
-                printf("[INFO] Attaching our stream reader 0 to stream %" PRIsize_t " which is a video stream.\n", i);
-                if (!avi_get_stream_reader(&p->r, (int)i, my_avi_player_on_video_cb, my_avi_player_on_video_cb, NULL, NULL, &p->s_video)) goto ErrRet;
-            }
-            else
-            {
-                printf("[INFO] The stream %" PRIsize_t " is also a video stream, since we already selected the first occured one, we don't use this one here.\n", i);
-            }
-        }
-        else if (avi_stream_is_audio(stream_info))
-        {
-            if (p->s_audio.r == NULL)
-            {
-                printf("[INFO] Attaching our stream reader 1 to stream %" PRIsize_t " which is an audio stream.\n", i);
-                if (!avi_get_stream_reader(&p->r, (int)i, NULL, NULL, NULL, my_avi_player_on_audio_cb, &p->s_audio)) goto ErrRet;
-            }
-            else
-            {
-                printf("[INFO] The stream %" PRIsize_t " is also an audio stream, since we already selected the first occured one, we don't use this one here.\n", i);
-            }
-        }
-        else if (avi_stream_is_midi(stream_info))
-        {
-            printf("[INFO] The stream %" PRIsize_t " is a MIDI stream, we don't use it here.\n", i);
-        }
-        else if (avi_stream_is_text(stream_info))
-        {
-            printf("[INFO] The stream %" PRIsize_t " is a text stream, we don't use it here.\n", i);
-        }
-        else
-        {
-            char fourcc_buf[5] = { 0 };
-            *(uint32_t*)fourcc_buf = stream_info->stream_header.fccType;
-            printf("[WARN] The stream %" PRIsize_t " is neither video, audio, midi, nor text stream, it is \"%s\".\n", i, fourcc_buf);
-        }
-        // print the stream name. I'm just curious what would it be.
-        if (strlen(stream_info->stream_name))
-        {
-            printf("[INFO] The name of the stream is \"%s\".\n", stream_info->stream_name);
-        }
-    }
+    if (!avi_map_stream_readers(&p->r, p, p, my_avi_player_on_video_cb, my_avi_player_on_video_cb, NULL, my_avi_player_on_audio_cb, &p->s_video, &p->s_audio)) goto ErrRet;
 
     p->video_width = p->r.avih.dwWidth;
     p->video_height = p->r.avih.dwHeight;
