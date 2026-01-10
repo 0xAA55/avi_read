@@ -303,6 +303,11 @@ int main(int argc, char**argv)
 {
     my_avi_player p;
     fprintf(stderr, "[WARN]: this is just a test program.\n");
+    if (argc < 2)
+    {
+        fprintf(stderr, "[ERROR]: Usage: *s <path_to_avi_file>\n");
+        return 1;
+    }
     if (!my_avi_player_open(&p, argv[1])) return 1;
     int exit_code = my_avi_player_play(&p);
     my_avi_player_close(&p);
