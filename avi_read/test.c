@@ -207,7 +207,6 @@ static int my_avi_player_play(my_avi_player *p)
     {
         while (!p->windows_guts.audio_buffer_is_playing)
         {
-            printf("A");
             if (!avi_stream_reader_move_to_next_packet(s_audio, 1)) return 0;
             audio_byte_pos += s_audio->cur_packet_len;
         }
@@ -243,12 +242,10 @@ static int my_avi_player_play(my_avi_player *p)
                 {
                     if (audio_byte_pos >= target_a_byte_pos)
                     {
-                        printf("A");
                         avi_stream_reader_move_to_next_packet(s_audio, 1);
                     }
                     else
                     {
-                        printf("a");
                         avi_stream_reader_move_to_next_packet(s_audio, 0);
                     }
                     audio_byte_pos += s_audio->cur_packet_len;
