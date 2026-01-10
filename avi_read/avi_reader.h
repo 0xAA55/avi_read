@@ -326,6 +326,14 @@ fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_i
 fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t time_in_ms);
 
 /// <summary>
+/// Seek the video stream to a specific frame index
+/// </summary>
+/// <param name="s">Your stream reader</param>
+/// <param name="frame_index">The target frame index</param>
+/// <returns>Non zero for success, otherwise is error (End of stream, or IO fault)</returns>
+int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int call_receive_functions);
+
+/// <summary>
 /// Move to the next packet, then call the callback functions for you to receive the packet.
 /// If you set `cur_packet_offset` to zero, then it will move to the first packet of the stream.
 /// </summary>
