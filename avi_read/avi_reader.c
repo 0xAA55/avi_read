@@ -755,6 +755,28 @@ int avi_is_stream_PNG(avi_stream_reader *s)
 	}
 }
 
+int avi_apply_palette_change(avi_stream_reader *s, void *pc)
+{
+	size_t di = 0;
+	avi_stream_info *sif;
+	avi_palette_change_max_size *pc_data = pc;
+	if (!s || !pc) return 0;
+	sif = s->stream_info;
+	if (!sif) return 0;
+	if (!avi_is_stream_indexed_color(s)) return 0;
+
+	for (size_t si = 0; si < pc_data->num_entries; si++)
+	{
+		di = si + pc_data->first_entry;
+		sif->bitmap_format.palette[di] = pc_data->palette[si];
+	}
+
+	if (sif->bitmap_format.BMIF.biClrUsed && sif->bitmap_format.BMIF.biClrUsed < di) sif->bitmap_format.BMIF.biClrUsed = di;
+	if (sif->bitmap_format.BMIF.biClrImportant && sif->bitmap_format.BMIF.biClrImportant < di) sif->bitmap_format.BMIF.biClrImportant = di;
+
+	return 1;
+}
+
 void avi_stream_reader_set_read_seek_tell
 (
 	avi_stream_reader *s,

@@ -262,6 +262,14 @@ int avi_is_stream_JPEG(avi_stream_reader *s);
 int avi_is_stream_PNG(avi_stream_reader *s);
 
 /// <summary>
+/// Apply palette change info for the stream
+/// </summary>
+/// <param name="s">Your stream reader, must be a video stream, otherwise the behavior is undefined.</param>
+/// <param name="pc">The palette change packet you read</param>
+/// <returns>0 for fail, nonzero for success.</returns>
+int avi_apply_palette_change(avi_stream_reader *s, void *pc);
+
+/// <summary>
 /// Set read()/seek()/tell() and userdata specificly for the stream reader.
 /// This function allows you to use a different fd/file handle to read the stream.
 /// Using different fd/file handle will increase the IO performance of the `avi_stream_reader`.
