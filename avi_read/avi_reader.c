@@ -844,6 +844,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 	r = s->r;
 	fsize_t packet_no = s->cur_stream_packet_index + 1;
 	fsize_t packet_no_avi = s->cur_packet_index + 1;
+	fsize_t cur_byte_offset = s->cur_stream_byte_offset + s->cur_packet_len;
 	int stream_id = s->stream_id;
 
 	// The kickstart of the packet seeking
@@ -851,8 +852,10 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 	{
 		packet_no = 0;
 		packet_no_avi = 0;
+		cur_byte_offset = 0;
 		s->cur_packet_offset = r->stream_data_offset;
 		s->cur_packet_len = 0;
+		s->cur_stream_byte_offset = 0;
 	}
 
 	int packet_found = 0;
@@ -884,6 +887,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 				s->cur_packet_offset = offset;
 				s->cur_packet_len = index.dwSize;
 				s->cur_stream_packet_index = packet_no;
+				s->cur_stream_byte_offset = cur_byte_offset;
 				s->is_no_more_packets = 0;
 				packet_found = 1;
 				if (call_receive_functions)
@@ -947,6 +951,7 @@ int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive
 					s->cur_packet_offset = chunk_start;
 					s->cur_packet_len = chunk_size;
 					s->cur_stream_packet_index = packet_no;
+					s->cur_stream_byte_offset = cur_byte_offset;
 					s->is_no_more_packets = 0;
 					packet_found = 1;
 					if (call_receive_functions)

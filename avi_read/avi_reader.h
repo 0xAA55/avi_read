@@ -126,6 +126,9 @@ typedef struct
 	/// The current stream packet index
 	fsize_t cur_stream_packet_index;
 
+	/// The current stream byte offset
+	fsize_t cur_stream_byte_offset;
+
 	/// The current packet position in the file.
 	fsize_t cur_packet_offset;
 
