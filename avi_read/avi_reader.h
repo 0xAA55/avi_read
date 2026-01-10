@@ -334,6 +334,15 @@ fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t 
 int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int call_receive_functions);
 
 /// <summary>
+/// Seek the audio stream to a specific byte offset
+/// * A block is `(sample number) / channels`
+/// </summary>
+/// <param name="s">Your stream reader</param>
+/// <param name="frame_index">The target byte offset</param>
+/// <returns>Non zero for success, otherwise is error (End of stream, or IO fault)</returns>
+int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int call_receive_functions);
+
+/// <summary>
 /// Move to the next packet, then call the callback functions for you to receive the packet.
 /// If you set `cur_packet_offset` to zero, then it will move to the first packet of the stream.
 /// </summary>

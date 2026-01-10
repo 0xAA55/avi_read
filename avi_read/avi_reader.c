@@ -862,6 +862,24 @@ int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int
 	return 1;
 }
 
+int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int call_receive_functions)
+{
+	if (!s) return 0;
+	if (s->cur_stream_byte_offset <= byte_offset && (s->cur_stream_byte_offset + s->cur_packet_len) > byte_offset) return 1;
+	if (s->cur_stream_byte_offset > byte_offset)
+	{
+		s->cur_packet_offset = 0;
+		s->cur_stream_byte_offset = 0;
+		s->cur_packet_len = 0;
+	}
+	while (s->cur_stream_byte_offset + s->cur_packet_len <= byte_offset)
+	{
+		if (!avi_stream_reader_move_to_next_packet(s, 0)) return 0;
+	}
+	if (call_receive_functions) return avi_stream_reader_call_callback_functions(s);
+	return 1;
+}
+
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions)
 {
 	avi_reader *r = NULL;
