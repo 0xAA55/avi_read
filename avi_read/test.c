@@ -222,23 +222,9 @@ static int my_avi_player_play(my_avi_player *p)
 
         if (have_video)
         {
-            uint64_t v_rate = h_video->stream_header.dwRate;
-            uint64_t v_scale = h_video->stream_header.dwScale;
-            uint64_t target_v_frame_no = (relative_time_ms * v_rate) / (1000 * v_scale);
+            uint64_t target_v_frame_no = avi_video_get_frame_number_by_time(s_video, relative_time_ms);
 
-            if (!s_video->is_no_more_packets && s_video->cur_stream_packet_index < target_v_frame_no)
-            {
-                avi_stream_reader_move_to_next_packet(s_video, 0);
-                if (s_video->cur_stream_packet_index == target_v_frame_no)
-                {
-                    printf("V");
-                    avi_stream_reader_call_callback_functions(s_video);
-                }
-                else
-                {
-                    printf("v");
-                }
-            }
+            avi_video_seek_to_frame_index(s_video, target_v_frame_no, 1);
         }
 
         if (have_audio)
@@ -246,7 +232,7 @@ static int my_avi_player_play(my_avi_player *p)
             int new_packet_got = 0;
             int num_playing = 0;
             int num_idle = 0;
-            uint64_t target_a_byte_pos = relative_time_ms * h_audio->audio_format.nAvgBytesPerSec / 1000;
+            uint64_t target_a_byte_pos = avi_audio_get_target_byte_offset_by_time(s_audio, relative_time_ms);
 
 #if WINDOWS_DEMO
             // Make sure all buffers are used for playing
