@@ -35,7 +35,12 @@ typedef struct
 	fsize_t stream_additional_header_data_offset;
 	fsize_t stream_additional_header_data_len;
 	char stream_name[AVI_MAX_STREAM_NAME];
-	wave_format_ex audio_format;
+	int format_data_is_valid;
+	union
+	{
+		bitmap_header_max_size bitmap_format;
+		wave_format_ex audio_format;
+	};
 }avi_stream_info;
 
 int avi_stream_is_video(avi_stream_info* si);

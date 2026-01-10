@@ -424,10 +424,25 @@ int avi_reader_init
 								if (!must_seek(r, strl_end_of_chunk)) goto ErrRet;
 							} while (strl_end_of_chunk < hdrl_end_of_chunk);
 
-							if (avi_stream_is_audio(stream_data))
+							if (avi_stream_is_video(stream_data))
+							{
+								size_t max_read = sizeof stream_data->bitmap_format;
+								size_t min_read = sizeof stream_data->bitmap_format.BMIF;
+								memset(&stream_data->bitmap_format, 0, sizeof stream_data->bitmap_format);
+								stream_data->format_data_is_valid = 0;
+								if (stream_data->stream_format_len >= min_read)
+								{
+									if (!must_seek(r, stream_data->stream_format_offset)) goto ErrRet;
+									if (!must_read(r, &stream_data->bitmap_format, stream_data->stream_format_len)) goto ErrRet;
+									stream_data->format_data_is_valid = 1;
+								}
+							}
+							else if (avi_stream_is_audio(stream_data))
 							{
 								size_t max_read = sizeof stream_data->audio_format;
 								size_t min_read = max_read - 2;
+								memset(&stream_data->audio_format, 0, sizeof stream_data->audio_format);
+								stream_data->format_data_is_valid = 0;
 								if (stream_data->stream_format_len >= min_read)
 								{
 									if (!must_seek(r, stream_data->stream_format_offset)) goto ErrRet;
@@ -440,6 +455,7 @@ int avi_reader_init
 										stream_data->audio_format.cbSize = 0;
 										break;
 									}
+									stream_data->format_data_is_valid = 1;
 								}
 							}
 
