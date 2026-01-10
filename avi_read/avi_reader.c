@@ -628,12 +628,9 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 		break;
 	default:
 		FATAL_PRINTF(r, "Unknown stream type: \"%s\"." NL, fourcc_buf);
-		goto ErrRet;
+		return 0;
 	}
 	return 1;
-ErrRet:
-	if (r) FATAL_PRINTF(r, "`avi_stream_call_callback_functions()` failed." NL, 0);
-	return 0;
 }
 
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions)
