@@ -206,8 +206,8 @@ int avi_get_stream_reader
 /// <param name="f_read">Your `read()` function for me to read the AVI file. Passing NULL is allowed.</param>
 /// <param name="f_seek">Your `seek()` function for me to change the absolute read position. Passing NULL is allowed.</param>
 /// <param name="f_tell">Your `tell()` function for me to retrieve the current read position. Passing NULL is allowed.</param>
-/// <returns>0 for fail, nonzero for success.</returns>
-int avi_stream_reader_set_read_seek_tell
+/// <returns></returns>
+void avi_stream_reader_set_read_seek_tell
 (
 	avi_stream_reader *s,
 	void *userdata,

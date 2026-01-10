@@ -599,7 +599,7 @@ ErrRet:
 	return 0;
 }
 
-int avi_stream_reader_set_read_seek_tell
+void avi_stream_reader_set_read_seek_tell
 (
 	avi_stream_reader *s,
 	void *userdata,

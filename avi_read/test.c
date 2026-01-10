@@ -155,8 +155,8 @@ static int my_avi_player_open(my_avi_player *p, const char *path)
         PRINT_INFO
     )) goto ErrRet;
 
-    if (!avi_stream_reader_set_read_seek_tell(&p->s_video, p, my_avi_video_read, my_avi_video_seek, my_avi_video_tell)) goto ErrRet;
-    if (!avi_stream_reader_set_read_seek_tell(&p->s_audio, p, my_avi_audio_read, my_avi_audio_seek, my_avi_audio_tell)) goto ErrRet;
+    avi_stream_reader_set_read_seek_tell(&p->s_video, p, my_avi_video_read, my_avi_video_seek, my_avi_video_tell);
+    avi_stream_reader_set_read_seek_tell(&p->s_audio, p, my_avi_audio_read, my_avi_audio_seek, my_avi_audio_tell);
 
     // I want to dedicate my stream reader 0 to the video stream,
     //   and my stream reader 1 to the audio stream.
