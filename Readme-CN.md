@@ -14,17 +14,14 @@
 
 添加到项目后，确保 `avi_reader.c` 能参与编译，并且其它两个头文件能被你的源码文件包含。
 
-建议在你的嵌入式项目里使用 `fatfs` 库。另外就是，`fatfs` 支持 `exFAT`，而 `exFAT` 支持超过 4GB 的文件。你要是想支持这样的大文件的处理，在 `#include "avi_reader.h"` 的前面加上一句：
-```c
-#define AVI_ENABLE_4GB_FILES 1
-```
+建议在你的嵌入式项目里使用 [Phat](https://gitee.com/a5k3rn3l/phat.git) 库，它比 `FatFs` 接口设计更明确。除此以外，如果你的文件系统库支持超过 4GB 的文件，在工程的宏定义里增加：`AVI_ENABLE_4GB_FILES 1`
 
-我的项目文件夹里有 `.sln` 文件和 `.vcxproj` 文件。这些文件与你无关，因为我使用 Visual Studio 2022 进行开发和调试。你如果也安装了 Visual Studio 2022，你也可以用它来调试，然后给我发 PR。
+我的项目文件夹里有 `.sln` 文件和 `.vcxproj` 文件。这些文件与你无关，因为我使用 Visual Studio 2026 进行开发和调试。你如果也安装了 Visual Studio 2026，你也可以用它来调试，然后给我发 PR。
 
 ## 用法
 
 直接看 `avi_reader.h` 头文件里面有接口定义，懂 C 的人肯定都能看懂这些接口定义。
-以下的回调函数你必须实现：（如果是嵌入式环境，你有 `fatfs`，那就比较好实现了）
+以下的回调函数你必须实现：（如果是嵌入式环境，你有 `Phat`，那就比较好实现了）
 ```c
 fssize_t (*f_read)(void *buffer, size_t len, void* userdata);
 fssize_t (*f_seek)(fsize_t offset, void* userdata);

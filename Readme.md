@@ -14,7 +14,7 @@ Include the license. Please mention that my AVI Reader is developed by 0xAA55.
 
 Copy them into your project, ensure `avi_reader.c` could be compiled, and your source files can `#include` the header files.
 
-Consider adding the `fatfs` library for your embedded system. Note that `fatfs` supports `exFAT`, which allows files larger than 4GB. If you plan to handle such large AVI files, add `#define AVI_ENABLE_4GB_FILES 1` before including `avi_reader.h`.
+It is recommended to use the [Phat](https://github.com/0xAA55/Phat.git) library in your embedded project, as it has a clearer interface design compared to `FatFs`. Additionally, if your file system library supports files larger than 4GB, define `AVI_ENABLE_4GB_FILES=1`.
 
 The `.sln` and `.vcxproj` files (for Visual Studio 2022) are for me to develop my library, you don't need them but if you also have Visual Studio 2022, you can debug it yourself easily and send me a pull request on GitHub.
 
