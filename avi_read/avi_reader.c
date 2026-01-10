@@ -5,11 +5,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define AVI_ROBUSTINESS 1
-#if AVI_NO_ROBUSTINESS
-#undef AVI_ROBUSTINESS
-#endif
-
 #define AVIF_HASINDEX		0x00000010
 #define AVIF_MUSTUSEINDEX	0x00000020
 #define AVIF_ISINTERLEAVED	0x00000100
@@ -281,16 +276,10 @@ int avi_reader_init
 )
 {
 	if (!f_logprintf) f_logprintf = default_logprintf;
-#if AVI_ROBUSTINESS
-	if (!r)
-	{
-		avi_reader fake_r = create_only_for_printf(f_logprintf, log_level, userdata);
-		r = &fake_r;
-		FATAL_PRINTF(r, "Invalid parameter: `avi_reader *r` must not be NULL." NL, 0);
-		r = NULL;
-		goto ErrRet;
-	}
-#endif
+	if (!r) return 0;
+	if (!f_read) return 0;
+	if (!f_seek) return 0;
+	if (!f_tell) return 0;
 
 	memset(r, 0, sizeof  *r);
 	r->userdata = userdata;
@@ -300,23 +289,6 @@ int avi_reader_init
 	r->f_logprintf = f_logprintf;
 	r->log_level = log_level;
 
-#if AVI_ROBUSTINESS
-	if (!f_read)
-	{
-		FATAL_PRINTF(r, "Invalid parameter: must provide your `read_cb` implementation." NL, 0);
-		goto ErrRet;
-	}
-	if (!f_seek)
-	{
-		FATAL_PRINTF(r, "Invalid parameter: must provide your `seek_cb` implementation." NL, 0);
-		goto ErrRet;
-	}
-	if (!f_tell)
-	{
-		FATAL_PRINTF(r, "Invalid parameter: must provide your `tell_cb` implementation." NL, 0);
-		goto ErrRet;
-	}
-#endif
 	uint32_t riff_len;
 	if (!must_match(r, "RIFF")) goto ErrRet;
 	if (!must_read(r, &riff_len, 4)) goto ErrRet;
@@ -573,26 +545,18 @@ int avi_get_stream_reader
 	avi_stream_reader *s_out
 )
 {
-#if AVI_ROBUSTINESS
 	if (!r)
 	{
 		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
 		r = &fake_r;
-		FATAL_PRINTF(r, "Param `avi_reader *r` must not be NULL. You get your stream from what?" NL, 0);
-		r = NULL;
-		goto ErrRet;
 	}
 	if (stream_id >= (int)r->num_streams)
 	{
 		FATAL_PRINTF(r, "Bad stream id `%d` (Max: `%u`)" NL, stream_id, r->num_streams);
 		goto ErrRet;
 	}
-	if (!s_out)
-	{
-		FATAL_PRINTF(r, "Param `avi_stream_reader *s_out` must not be NULL. You asked for a stream but passed a NULL pointer, what's wrong with you?" NL, 0);
-		goto ErrRet;
-	}
-#endif
+	if (!s_out) return 0;
+	if (!r) return 0;
 
 	if (!on_video_compressed) on_video_compressed = default_on_stream_data_cb;
 	if (!on_video) on_video = default_on_stream_data_cb;
@@ -615,7 +579,6 @@ int avi_get_stream_reader
 
 	return 1;
 ErrRet:
-	if (r) FATAL_PRINTF(r, "Reading AVI file failed." NL, 0);
 	if (s_out) memset(s_out, 0, sizeof  *s_out);
 	return 0;
 }
@@ -629,42 +592,19 @@ int avi_stream_reader_set_read_seek_tell
 	tell_cb f_tell
 )
 {
-	avi_reader *r;
-#if AVI_ROBUSTINESS
-	if (!s)
-	{
-		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
-		r = &fake_r;
-		FATAL_PRINTF(r, "Param `avi_stream_reader *s` must not be NULL. Otherwise you are setting the callback functions for the void?" NL, 0);
-		r = NULL;
-		goto ErrRet;
-	}
-#endif
-	r = s->r;
+	if (!s) return;
 
 	s->userdata = userdata;
 	if (f_read) s->f_read = f_read;
 	if (f_seek) s->f_seek = f_seek;
 	if (f_tell) s->f_tell = f_tell;
-	return 1;
-ErrRet:
-	if (r) FATAL_PRINTF(r, "`avi_stream_reader_set_read_seek_tell()` failed." NL, 0);
-	return 0;
+	return;
 }
 
 int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 {
 	avi_reader *r = NULL;
-#if AVI_ROBUSTINESS
-	if (!s)
-	{
-		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
-		r = &fake_r;
-		FATAL_PRINTF(r, "Invalid parameter: `avi_stream_reader *s` must not be NULL, because all of the callback functions needed are in the structure." NL, 0);
-		r = NULL;
-		goto ErrRet;
-	}
-#endif
+	if (!s) return 0;
 	r = s->r;
 	char fourcc_buf[5] = { 0 };
 	*(uint32_t *)fourcc_buf = s->cur_4cc;
@@ -699,16 +639,7 @@ ErrRet:
 int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions)
 {
 	avi_reader *r = NULL;
-#if AVI_ROBUSTINESS
-	if (!s)
-	{
-		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
-		r = &fake_r;
-		FATAL_PRINTF(r, "Param `avi_stream_reader *r` must not be NULL. You are reading packets from the void." NL, 0);
-		r = NULL;
-		goto ErrRet;
-	}
-#endif
+	if (!s) return 0;
 	r = s->r;
 	fsize_t packet_no = s->cur_stream_packet_index + 1;
 	fsize_t packet_no_avi = s->cur_packet_index + 1;
@@ -851,16 +782,7 @@ ErrRet:
 int avi_stream_reader_is_end_of_stream(avi_stream_reader *s)
 {
 	avi_reader *r = NULL;
-#if AVI_ROBUSTINESS
-	if (!s)
-	{
-		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
-		r = &fake_r;
-		FATAL_PRINTF(r, "Param `avi_stream_reader *r` must not be NULL. You don't want to check if the void is end of stream." NL, 0);
-		r = NULL;
-		return 1; // Yes, the void don't have any packets for you to read.
-	}
-#endif
+	if (!s) return 1;
 	r = s->r;
 	return s->is_no_more_packets;
 }
