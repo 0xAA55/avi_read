@@ -306,8 +306,8 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
 /// </summary>
 /// <param name="s">Your stream reader</param>
 /// <param name="time_in_ms">The target time</param>
-/// <returns></returns>
-uint64_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms);
+/// <returns>The frame index</returns>
+fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms);
 
 /// <summary>
 /// Move to the next packet, then call the callback functions for you to receive the packet.
