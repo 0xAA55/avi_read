@@ -82,6 +82,24 @@ typedef struct
 	uint16_t cbSize;
 } wave_format_ex;
 
+typedef struct
+{
+	uint8_t R;
+	uint8_t G;
+	uint8_t B;
+	uint8_t A;
+} palette_entry;
+
+typedef struct
+{
+	bitmap_info_header BMIF;
+	union
+	{
+		uint32_t bitfields[4];
+		palette_entry palette[256];
+	};
+} bitmap_header_max_size;
+
 #pragma pack(pop)
 
 #endif
