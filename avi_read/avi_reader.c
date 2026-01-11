@@ -800,19 +800,19 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 	{
 	case TCC_db:
 	case TCC_db_:
-		s->on_video(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		s->on_video(s->cur_packet_offset, s->cur_packet_len, s->userdata);
 		break;
 	case TCC_dc:
 	case TCC_dc_:
-		s->on_video_compressed(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		s->on_video_compressed(s->cur_packet_offset, s->cur_packet_len, s->userdata);
 		break;
 	case TCC_pc:
 	case TCC_pc_:
-		s->on_palette_change(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		s->on_palette_change(s->cur_packet_offset, s->cur_packet_len, s->userdata);
 		break;
 	case TCC_wb:
 	case TCC_wb_:
-		s->on_audio(s->cur_packet_offset, s->cur_packet_len, s->r->userdata);
+		s->on_audio(s->cur_packet_offset, s->cur_packet_len, s->userdata);
 		break;
 	default:
 		FATAL_PRINTF(r, "Unknown stream type: \"%s\"." NL, fourcc_buf);
