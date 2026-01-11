@@ -66,7 +66,11 @@
 #ifdef _MSC_VER
 #  define NL "\n"
 #else
-#  define NL "\r\n"
+#  ifdef AVL_LOG_NL
+#    define NL AVL_LOG_NL
+#  else
+#    define NL "\n"
+#  endif
 #endif
 
 int avi_stream_is_video(avi_stream_info *si)
