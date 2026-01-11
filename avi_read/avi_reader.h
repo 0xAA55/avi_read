@@ -27,6 +27,10 @@ typedef int64_t fssize_t;
 #define AVI_MAX_STREAM_NAME 64
 #endif
 
+#ifndef AVI_FUNC
+#define AVI_FUNC
+#endif
+
 typedef struct
 {
 	avi_stream_header stream_header;
@@ -165,7 +169,7 @@ typedef struct
 /// <param name="f_logprintf">Your `printf()` function for me to log. You can pass `NULL` and I will call `vprintf()` as the default behavior.</param>
 /// <param name="log_level">The log level, see `avi_logprintf_level`</param>
 /// <returns>0 for fail, nonzero for success.</returns>
-int avi_reader_init
+AVI_FUNC int avi_reader_init
 (
 	avi_reader *r,
 	void *userdata,
@@ -188,7 +192,7 @@ int avi_reader_init
 /// <param name="on_audio">Your function to receive an audio packet. Passing NULL is allowed.</param>
 /// <param name="s_out">Your `avi_stream_reader` to be initialized.</param>
 /// <returns>0 for fail, nonzero for success.</returns>
-int avi_get_stream_reader
+AVI_FUNC int avi_get_stream_reader
 (
 	avi_reader *r,
 	void *userdata,
@@ -213,7 +217,7 @@ int avi_get_stream_reader
 /// <param name="video_out">Your `avi_stream_reader` for video to be initialized. Passing NULL is allowed.</param>
 /// <param name="audio_out">Your `avi_stream_reader` for audio to be initialized. Passing NULL is allowed.</param>
 /// <returns>0 for fail, nonzero for success.</returns>
-int avi_map_stream_readers
+AVI_FUNC int avi_map_stream_readers
 (
 	avi_reader *r,
 	void *userdata_video,
@@ -231,42 +235,42 @@ int avi_map_stream_readers
 /// </summary>
 /// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
 /// <returns>Non-zero if true</returns>
-int avi_is_stream_indexed_color(avi_stream_reader *s);
+AVI_FUNC int avi_is_stream_indexed_color(avi_stream_reader *s);
 
 /// <summary>
 /// Checkout if the stream format is RGB555
 /// </summary>
 /// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
 /// <returns>Non-zero if true</returns>
-int avi_is_stream_RGB555(avi_stream_reader *s);
+AVI_FUNC int avi_is_stream_RGB555(avi_stream_reader *s);
 
 /// <summary>
 /// Checkout if the stream format is RGB565
 /// </summary>
 /// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
 /// <returns>Non-zero if true</returns>
-int avi_is_stream_RGB565(avi_stream_reader *s);
+AVI_FUNC int avi_is_stream_RGB565(avi_stream_reader *s);
 
 /// <summary>
 /// Checkout if the stream format is RGB888
 /// </summary>
 /// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
 /// <returns>Non-zero if true</returns>
-int avi_is_stream_RGB888(avi_stream_reader *s);
+AVI_FUNC int avi_is_stream_RGB888(avi_stream_reader *s);
 
 /// <summary>
 /// Checkout if the stream format is JPEG
 /// </summary>
 /// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
 /// <returns>Non-zero if true</returns>
-int avi_is_stream_JPEG(avi_stream_reader *s);
+AVI_FUNC int avi_is_stream_JPEG(avi_stream_reader *s);
 
 /// <summary>
 /// Checkout if the stream format is PNG
 /// </summary>
 /// <param name="s">Your stream reader, must be a video stream, otherwise the returned value is invalid.</param>
 /// <returns>Non-zero if true</returns>
-int avi_is_stream_PNG(avi_stream_reader *s);
+AVI_FUNC int avi_is_stream_PNG(avi_stream_reader *s);
 
 /// <summary>
 /// Apply palette change info for the stream
@@ -274,7 +278,7 @@ int avi_is_stream_PNG(avi_stream_reader *s);
 /// <param name="s">Your stream reader, must be a video stream, otherwise the behavior is undefined.</param>
 /// <param name="pc">The palette change packet you read</param>
 /// <returns>0 for fail, nonzero for success.</returns>
-int avi_apply_palette_change(avi_stream_reader *s, void *pc);
+AVI_FUNC int avi_apply_palette_change(avi_stream_reader *s, void *pc);
 
 /// <summary>
 /// Set read()/seek()/tell() and userdata specificly for the stream reader.
@@ -288,7 +292,7 @@ int avi_apply_palette_change(avi_stream_reader *s, void *pc);
 /// <param name="f_seek">Your `seek()` function for me to change the absolute read position. Passing NULL is allowed.</param>
 /// <param name="f_tell">Your `tell()` function for me to retrieve the current read position. Passing NULL is allowed.</param>
 /// <returns></returns>
-void avi_stream_reader_set_read_seek_tell
+AVI_FUNC void avi_stream_reader_set_read_seek_tell
 (
 	avi_stream_reader *s,
 	void *userdata,
@@ -306,7 +310,7 @@ void avi_stream_reader_set_read_seek_tell
 /// </summary>
 /// <param name="s">Your stream reader</param>
 /// <returns>0 for fail, nonzero for success.</returns>
-int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
+AVI_FUNC int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
 
 /// <summary>
 /// Calculate the target frame index of a specific millisecond.
@@ -314,7 +318,7 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s);
 /// <param name="s">Your stream reader</param>
 /// <param name="time_in_ms">The target time</param>
 /// <returns>The frame index</returns>
-fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms);
+AVI_FUNC fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms);
 
 /// <summary>
 /// Calculate the target audio block index of a specific millisecond.
@@ -323,7 +327,7 @@ fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_i
 /// <param name="s">Your stream reader</param>
 /// <param name="time_in_ms">The target time</param>
 /// <returns>The target audio byte offset of the stream</returns>
-fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t time_in_ms);
+AVI_FUNC fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t time_in_ms);
 
 /// <summary>
 /// Seek the video stream to a specific frame index
@@ -331,7 +335,7 @@ fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t 
 /// <param name="s">Your stream reader</param>
 /// <param name="frame_index">The target frame index</param>
 /// <returns>Non zero for success, otherwise is error (End of stream, or IO fault)</returns>
-int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int call_receive_functions);
+AVI_FUNC int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int call_receive_functions);
 
 /// <summary>
 /// Seek the audio stream to a specific byte offset
@@ -340,7 +344,7 @@ int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int
 /// <param name="s">Your stream reader</param>
 /// <param name="frame_index">The target byte offset</param>
 /// <returns>Non zero for success, otherwise is error (End of stream, or IO fault)</returns>
-int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int call_receive_functions);
+AVI_FUNC int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int call_receive_functions);
 
 /// <summary>
 /// Move to the next packet, then call the callback functions for you to receive the packet.
@@ -348,13 +352,13 @@ int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int
 /// </summary>
 /// <param name="s">Your stream reader</param>
 /// <returns>0 for fail, nonzero for success.</returns>
-int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions);
+AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions);
 
 /// <summary>
 /// Check if the stream reader is no more packets to read.
 /// </summary>
 /// <param name="s">The stream reader</param>
 /// <returns>1 for yes, 0 for no. If yes, then there's no more packets to read. -1 for bad parameters.</returns>
-int avi_stream_reader_is_end_of_stream(avi_stream_reader *s);
+AVI_FUNC int avi_stream_reader_is_end_of_stream(avi_stream_reader *s);
 
 #endif

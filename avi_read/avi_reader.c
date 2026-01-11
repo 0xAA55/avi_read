@@ -73,27 +73,27 @@
 #  endif
 #endif
 
-int avi_stream_is_video(avi_stream_info *si)
+AVI_FUNC int avi_stream_is_video(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "vids", 4);
 }
 
-int avi_stream_is_audio(avi_stream_info *si)
+AVI_FUNC int avi_stream_is_audio(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "auds", 4);
 }
 
-int avi_stream_is_text(avi_stream_info *si)
+AVI_FUNC int avi_stream_is_text(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "txts", 4);
 }
 
-int avi_stream_is_midi(avi_stream_info *si)
+AVI_FUNC int avi_stream_is_midi(avi_stream_info *si)
 {
 	return !memcmp(&si->stream_header.fccType, "mids", 4);
 }
 
-static int must_match(avi_reader *r, const char *fourcc)
+AVI_FUNC static int must_match(avi_reader *r, const char *fourcc)
 {
 	char buf[5] = { 0 };
 	if (r->f_read(buf, 4, r->userdata) != 4) return 0;
@@ -105,7 +105,7 @@ static int must_match(avi_reader *r, const char *fourcc)
 	return 1;
 }
 
-static int must_read(avi_reader *r, void *buffer, size_t len)
+AVI_FUNC static int must_read(avi_reader *r, void *buffer, size_t len)
 {
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
 	if (rl < 0)
@@ -124,7 +124,7 @@ static int must_read(avi_reader *r, void *buffer, size_t len)
 	}
 }
 
-static int must_tell(avi_reader *r, fsize_t *cur_pos)
+AVI_FUNC static int must_tell(avi_reader *r, fsize_t *cur_pos)
 {
 	fssize_t told = r->f_tell(r->userdata);
 	if (told < 0)
@@ -139,7 +139,7 @@ static int must_tell(avi_reader *r, fsize_t *cur_pos)
 	}
 }
 
-static int must_seek(avi_reader *r, fsize_t target)
+AVI_FUNC static int must_seek(avi_reader *r, fsize_t target)
 {
 	fssize_t told = r->f_seek(target, r->userdata);
 	if (told < 0)
@@ -153,7 +153,7 @@ static int must_seek(avi_reader *r, fsize_t target)
 	}
 }
 
-static int rel_seek(avi_reader *r, fssize_t offset)
+AVI_FUNC static int rel_seek(avi_reader *r, fssize_t offset)
 {
 	fssize_t cur_pos = r->f_tell(r->userdata);
 	if (cur_pos < 0)
@@ -171,7 +171,7 @@ static int rel_seek(avi_reader *r, fssize_t offset)
 	return 1;
 }
 
-static int must_match_s(avi_stream_reader *r, const char *fourcc)
+AVI_FUNC static int must_match_s(avi_stream_reader *r, const char *fourcc)
 {
 	char buf[5] = { 0 };
 	if (r->f_read(buf, 4, r->userdata) != 4) return 0;
@@ -183,7 +183,7 @@ static int must_match_s(avi_stream_reader *r, const char *fourcc)
 	return 1;
 }
 
-static int must_read_s(avi_stream_reader *r, void *buffer, size_t len)
+AVI_FUNC static int must_read_s(avi_stream_reader *r, void *buffer, size_t len)
 {
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
 	if (rl < 0)
@@ -202,7 +202,7 @@ static int must_read_s(avi_stream_reader *r, void *buffer, size_t len)
 	}
 }
 
-static int must_tell_s(avi_stream_reader *r, fsize_t *cur_pos)
+AVI_FUNC static int must_tell_s(avi_stream_reader *r, fsize_t *cur_pos)
 {
 	fssize_t told = r->f_tell(r->userdata);
 	if (told < 0)
@@ -217,7 +217,7 @@ static int must_tell_s(avi_stream_reader *r, fsize_t *cur_pos)
 	}
 }
 
-static int must_seek_s(avi_stream_reader *r, fsize_t target)
+AVI_FUNC static int must_seek_s(avi_stream_reader *r, fsize_t target)
 {
 	fssize_t told = r->f_seek(target, r->userdata);
 	if (told < 0)
@@ -231,7 +231,7 @@ static int must_seek_s(avi_stream_reader *r, fsize_t target)
 	}
 }
 
-static int rel_seek_s(avi_stream_reader *r, fssize_t offset)
+AVI_FUNC static int rel_seek_s(avi_stream_reader *r, fssize_t offset)
 {
 	fssize_t cur_pos = r->f_tell(r->userdata);
 	if (cur_pos < 0)
@@ -249,7 +249,7 @@ static int rel_seek_s(avi_stream_reader *r, fssize_t offset)
 	return 1;
 }
 
-static void default_logprintf(void *userdata, const char *format, ...)
+AVI_FUNC static void default_logprintf(void *userdata, const char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
@@ -258,7 +258,7 @@ static void default_logprintf(void *userdata, const char *format, ...)
 	(void)userdata;
 }
 
-static avi_reader create_only_for_printf(logprintf_cb f_logprintf, avi_logprintf_level log_level, void *userdata)
+AVI_FUNC static avi_reader create_only_for_printf(logprintf_cb f_logprintf, avi_logprintf_level log_level, void *userdata)
 {
 	avi_reader fake_r;
 	memset(&fake_r, 0, sizeof fake_r);
@@ -546,14 +546,14 @@ ErrRet:
 	return 0;
 }
 
-static void default_on_stream_data_cb(fsize_t offset, fsize_t length, void *userdata)
+AVI_FUNC static void default_on_stream_data_cb(fsize_t offset, fsize_t length, void *userdata)
 {
 	(void)offset;
 	(void)length;
 	(void)userdata;
 }
 
-int avi_get_stream_reader
+AVI_FUNC int avi_get_stream_reader
 (
 	avi_reader *r,
 	void *userdata,
@@ -599,7 +599,7 @@ ErrRet:
 	return 0;
 }
 
-int avi_map_stream_readers
+AVI_FUNC int avi_map_stream_readers
 (
 	avi_reader *r,
 	void *userdata_video,
@@ -633,7 +633,7 @@ int avi_map_stream_readers
 	return 1;
 }
 
-int avi_is_stream_indexed_color(avi_stream_reader *s)
+AVI_FUNC int avi_is_stream_indexed_color(avi_stream_reader *s)
 {
 	avi_stream_info *si;
 	if (!s) return 0;
@@ -651,7 +651,7 @@ int avi_is_stream_indexed_color(avi_stream_reader *s)
 	}
 }
 
-int avi_is_stream_RGB555(avi_stream_reader *s)
+AVI_FUNC int avi_is_stream_RGB555(avi_stream_reader *s)
 {
 	avi_stream_info *si;
 	if (!s) return 0;
@@ -675,7 +675,7 @@ int avi_is_stream_RGB555(avi_stream_reader *s)
 	}
 }
 
-int avi_is_stream_RGB565(avi_stream_reader *s)
+AVI_FUNC int avi_is_stream_RGB565(avi_stream_reader *s)
 {
 	avi_stream_info *si;
 	if (!s) return 0;
@@ -697,7 +697,7 @@ int avi_is_stream_RGB565(avi_stream_reader *s)
 	}
 }
 
-int avi_is_stream_RGB888(avi_stream_reader *s)
+AVI_FUNC int avi_is_stream_RGB888(avi_stream_reader *s)
 {
 	avi_stream_info *si;
 	if (!s) return 0;
@@ -721,7 +721,7 @@ int avi_is_stream_RGB888(avi_stream_reader *s)
 	}
 }
 
-int avi_is_stream_JPEG(avi_stream_reader *s)
+AVI_FUNC int avi_is_stream_JPEG(avi_stream_reader *s)
 {
 	avi_stream_info *si;
 	if (!s) return 0;
@@ -737,7 +737,7 @@ int avi_is_stream_JPEG(avi_stream_reader *s)
 	}
 }
 
-int avi_is_stream_PNG(avi_stream_reader *s)
+AVI_FUNC int avi_is_stream_PNG(avi_stream_reader *s)
 {
 	avi_stream_info *si;
 	if (!s) return 0;
@@ -753,7 +753,7 @@ int avi_is_stream_PNG(avi_stream_reader *s)
 	}
 }
 
-int avi_apply_palette_change(avi_stream_reader *s, void *pc)
+AVI_FUNC int avi_apply_palette_change(avi_stream_reader *s, void *pc)
 {
 	uint32_t di = 0;
 	avi_stream_info *sif;
@@ -775,7 +775,7 @@ int avi_apply_palette_change(avi_stream_reader *s, void *pc)
 	return 1;
 }
 
-void avi_stream_reader_set_read_seek_tell
+AVI_FUNC void avi_stream_reader_set_read_seek_tell
 (
 	avi_stream_reader *s,
 	void *userdata,
@@ -793,7 +793,7 @@ void avi_stream_reader_set_read_seek_tell
 	return;
 }
 
-int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
+AVI_FUNC int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 {
 	avi_reader *r = NULL;
 	if (!s) return 0;
@@ -825,7 +825,7 @@ int avi_stream_reader_call_callback_functions(avi_stream_reader *s)
 	return 1;
 }
 
-fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms)
+AVI_FUNC fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_in_ms)
 {
 	avi_stream_info *h_video;
 	if (!s) return 0;
@@ -836,7 +836,7 @@ fsize_t avi_video_get_frame_number_by_time(avi_stream_reader *s, uint64_t time_i
 	return (fsize_t)((time_in_ms * v_rate) / (1000 * v_scale));
 }
 
-fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t time_in_ms)
+AVI_FUNC fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t time_in_ms)
 {
 	avi_stream_info *h_audio;
 	if (!s) return 0;
@@ -845,7 +845,7 @@ fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t 
 	return (fsize_t)(time_in_ms * h_audio->audio_format.nAvgBytesPerSec / 1000);
 }
 
-int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int call_receive_functions)
+AVI_FUNC int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int call_receive_functions)
 {
 	if (!s) return 0;
 	if (s->cur_stream_packet_index > frame_index)
@@ -866,7 +866,7 @@ int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int
 	return 1;
 }
 
-int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int call_receive_functions)
+AVI_FUNC int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int call_receive_functions)
 {
 	if (!s) return 0;
 	if (s->cur_stream_byte_offset <= byte_offset && (s->cur_stream_byte_offset + s->cur_packet_len) > byte_offset)
@@ -896,7 +896,7 @@ int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int
 	return 1;
 }
 
-int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions)
+AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions)
 {
 	avi_reader *r = NULL;
 	if (!s) return 0;
@@ -1044,7 +1044,7 @@ ErrRet:
 	return 0;
 }
 
-int avi_stream_reader_is_end_of_stream(avi_stream_reader *s)
+AVI_FUNC int avi_stream_reader_is_end_of_stream(avi_stream_reader *s)
 {
 	avi_reader *r = NULL;
 	if (!s) return 1;
