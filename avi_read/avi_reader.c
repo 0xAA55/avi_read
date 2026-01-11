@@ -844,7 +844,6 @@ fsize_t avi_audio_get_target_byte_offset_by_time(avi_stream_reader *s, uint64_t 
 int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int call_receive_functions)
 {
 	if (!s) return 0;
-	if (s->cur_stream_packet_index == frame_index) return 1;
 	if (s->cur_stream_packet_index > frame_index)
 	{
 		s->cur_packet_offset = 0;
@@ -853,14 +852,26 @@ int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_index, int
 	{
 		if (!avi_stream_reader_move_to_next_packet(s, 0)) return 0;
 	}
-	if (call_receive_functions) return avi_stream_reader_call_callback_functions(s);
+	if (call_receive_functions)
+	{
+		if (s->cur_packet_offset == 0)
+			return avi_stream_reader_move_to_next_packet(s, 1);
+		else
+			return avi_stream_reader_call_callback_functions(s);
+	}
 	return 1;
 }
 
 int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int call_receive_functions)
 {
 	if (!s) return 0;
-	if (s->cur_stream_byte_offset <= byte_offset && (s->cur_stream_byte_offset + s->cur_packet_len) > byte_offset) return 1;
+	if (s->cur_stream_byte_offset <= byte_offset && (s->cur_stream_byte_offset + s->cur_packet_len) > byte_offset)
+	{
+		if (call_receive_functions)
+			return avi_stream_reader_move_to_next_packet(s, 1);
+		else
+			return 1;
+	}
 	if (s->cur_stream_byte_offset > byte_offset)
 	{
 		s->cur_packet_offset = 0;
@@ -871,7 +882,13 @@ int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_offset, int
 	{
 		if (!avi_stream_reader_move_to_next_packet(s, 0)) return 0;
 	}
-	if (call_receive_functions) return avi_stream_reader_call_callback_functions(s);
+	if (call_receive_functions)
+	{
+		if (s->cur_packet_offset == 0)
+			return avi_stream_reader_move_to_next_packet(s, 1);
+		else
+		return avi_stream_reader_call_callback_functions(s);
+	}
 	return 1;
 }
 
