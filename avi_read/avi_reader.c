@@ -426,7 +426,6 @@ int avi_reader_init
 
 							if (avi_stream_is_video(stream_data))
 							{
-								size_t max_read = sizeof stream_data->bitmap_format;
 								size_t min_read = sizeof stream_data->bitmap_format.BMIF;
 								memset(&stream_data->bitmap_format, 0, sizeof stream_data->bitmap_format);
 								stream_data->format_data_is_valid = 0;
@@ -562,11 +561,7 @@ int avi_get_stream_reader
 	avi_stream_reader *s_out
 )
 {
-	if (!r)
-	{
-		avi_reader fake_r = create_only_for_printf(default_logprintf, PRINT_FATAL, NULL);
-		r = &fake_r;
-	}
+	if (!r) return 0;
 	if (stream_id >= (int)r->num_streams)
 	{
 		FATAL_PRINTF(r, "Bad stream id `%d` (Max: `%u`)" NL, stream_id, r->num_streams);
