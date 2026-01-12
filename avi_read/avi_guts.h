@@ -8,10 +8,10 @@
 
 typedef struct
 {
-	int32_t x;
-	int32_t y;
-	int32_t r;
-	int32_t b;
+	int16_t x;
+	int16_t y;
+	int16_t r;
+	int16_t b;
 }rect;
 
 typedef struct
