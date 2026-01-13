@@ -960,6 +960,7 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 		{
 			s->is_no_more_packets = 1;
 			WARN_PRINTF(r, "Could not find packet %"PRIfsize_t" for the stream id %d." NL, packet_no, stream_id);
+			return 0;
 		}
 	}
 	else
@@ -1035,6 +1036,7 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 		{
 			s->is_no_more_packets = 1;
 			WARN_PRINTF(r, "No packet found for stream id %d after full file traversal." NL, stream_id);
+			return 0;
 		}
 	}
 
