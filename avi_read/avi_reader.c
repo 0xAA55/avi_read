@@ -891,7 +891,7 @@ AVI_FUNC int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_of
 		if (s->cur_packet_offset == 0)
 			return avi_stream_reader_move_to_next_packet(s, 1);
 		else
-		return avi_stream_reader_call_callback_functions(s);
+			return avi_stream_reader_call_callback_functions(s);
 	}
 	return 1;
 }
