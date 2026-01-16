@@ -153,24 +153,6 @@ AVI_FUNC static int must_seek(avi_reader *r, fsize_t target)
 	}
 }
 
-AVI_FUNC static int rel_seek(avi_reader *r, fssize_t offset)
-{
-	fssize_t cur_pos = r->f_tell(r->userdata);
-	if (cur_pos < 0)
-	{
-		FATAL_PRINTF(r, "`f_tell()` failed." NL, 0);
-		return 0;
-	}
-	fsize_t target = (fsize_t)(cur_pos + offset);
-	cur_pos = r->f_seek(target, r->userdata);
-	if (cur_pos < 0)
-	{
-		FATAL_PRINTF(r, "`f_seek(%x)` failed." NL, target);
-		return 0;
-	}
-	return 1;
-}
-
 AVI_FUNC static int must_match_s(avi_stream_reader *r, const char *fourcc)
 {
 	char buf[5] = { 0 };
@@ -231,24 +213,6 @@ AVI_FUNC static int must_seek_s(avi_stream_reader *r, fsize_t target)
 	}
 }
 
-AVI_FUNC static int rel_seek_s(avi_stream_reader *r, fssize_t offset)
-{
-	fssize_t cur_pos = r->f_tell(r->userdata);
-	if (cur_pos < 0)
-	{
-		FATAL_PRINTF(r->r, "`f_tell()` failed." NL, 0);
-		return 0;
-	}
-	fsize_t target = (fsize_t)(cur_pos + offset);
-	cur_pos = r->f_seek(target, r->userdata);
-	if (cur_pos < 0)
-	{
-		FATAL_PRINTF(r->r, "`f_seek(%x)` failed." NL, target);
-		return 0;
-	}
-	return 1;
-}
-
 AVI_FUNC static void default_logprintf(void *userdata, const char *format, ...)
 {
 	va_list ap;
@@ -256,16 +220,6 @@ AVI_FUNC static void default_logprintf(void *userdata, const char *format, ...)
 	vprintf(format, ap);
 	va_end(ap);
 	(void)userdata;
-}
-
-AVI_FUNC static avi_reader create_only_for_printf(logprintf_cb f_logprintf, avi_logprintf_level log_level, void *userdata)
-{
-	avi_reader fake_r;
-	memset(&fake_r, 0, sizeof fake_r);
-	fake_r.f_logprintf = f_logprintf;
-	fake_r.userdata = userdata;
-	fake_r.log_level = log_level;
-	return fake_r;
 }
 
 int avi_reader_init
@@ -1048,9 +1002,7 @@ ErrRet:
 
 AVI_FUNC int avi_stream_reader_is_end_of_stream(avi_stream_reader *s)
 {
-	avi_reader *r = NULL;
 	if (!s) return 1;
-	r = s->r;
 	return s->is_no_more_packets;
 }
 
