@@ -928,11 +928,12 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 	}
 	else
 	{
+		fsize_t real_packet_len = ((s->cur_packet_len - 1) / 2 + 1) * 2;
 		if (!s->mute_cur_stream_debug_print && packet_no == 0)
 		{
 			DEBUG_PRINTF(r, "Seeking packet %"PRIfsize_t" of the stream %d via file traversal." NL, packet_no, stream_id);
 		}
-		if (!must_seek_s(s, s->cur_packet_offset + s->cur_packet_len)) goto ErrRet;
+		if (!must_seek_s(s, s->cur_packet_offset + real_packet_len)) goto ErrRet;
 
 		char fourcc_buf[5] = { 0 };
 		uint32_t chunk_size;
@@ -944,7 +945,8 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 			if (!must_read_s(s, fourcc_buf, 4)) goto ErrRet;
 			if (!must_read_s(s, &chunk_size, 4)) goto ErrRet;
 			if (!must_tell_s(s, &chunk_start)) goto ErrRet;
-			chunk_end = chunk_start + chunk_size;
+			real_packet_len = ((chunk_size - 1) / 2 + 1) * 2;
+			chunk_end = chunk_start + real_packet_len;
 
 			if (!memcmp(fourcc_buf, "LIST", 4))
 			{
