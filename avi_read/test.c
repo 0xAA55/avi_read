@@ -214,10 +214,40 @@ static int my_avi_player_play(my_avi_player *p)
 #endif
 
     uint64_t start_time = get_super_precise_time_in_ns();
+#ifdef WINDOWS_DEMO
+    uint64_t left_key_press_time = start_time;
+    int left_key_down = 0;
+#endif
     while (have_video || have_audio)
     {
         uint64_t cur_time = get_super_precise_time_in_ns();
         uint64_t relative_time_ms = (cur_time - start_time) / 1000000;
+
+#if WINDOWS_DEMO
+        if (GetAsyncKeyState(VK_LEFT))
+        {
+            uint64_t go_back = (cur_time - left_key_press_time) / 1000000;
+            if (!left_key_down)
+            {
+                left_key_press_time = cur_time;
+                left_key_down = 1;
+            }
+            go_back *= 2;
+            if (go_back > relative_time_ms) go_back = relative_time_ms;
+            relative_time_ms -= go_back;
+            printf("Go back: %llu      \r", go_back);
+        }
+        else
+        {
+            if (left_key_down)
+            {
+                uint64_t go_back = (cur_time - left_key_press_time);
+                start_time += go_back * 2;
+                if (start_time > cur_time) start_time = cur_time;
+                left_key_down = 0;
+            }
+        }
+#endif
 
         if (have_video)
         {
