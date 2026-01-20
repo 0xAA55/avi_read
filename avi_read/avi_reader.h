@@ -355,6 +355,14 @@ AVI_FUNC int avi_audio_seek_to_byte_offset(avi_stream_reader *s, fsize_t byte_of
 AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int call_receive_functions);
 
 /// <summary>
+/// Move to the previous packet, then call the callback functions for you to receive the packet.
+/// If you set `cur_packet_offset` to zero, then it will move to the first packet of the stream.
+/// </summary>
+/// <param name="s">Your stream reader</param>
+/// <returns>0 for fail, nonzero for success.</returns>
+AVI_FUNC int avi_stream_reader_move_to_prev_packet(avi_stream_reader *s, int call_receive_functions);
+
+/// <summary>
 /// Check if the stream reader is no more packets to read.
 /// </summary>
 /// <param name="s">The stream reader</param>

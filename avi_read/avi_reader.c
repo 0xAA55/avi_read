@@ -1009,6 +1009,80 @@ ErrRet:
 	return 0;
 }
 
+AVI_FUNC int avi_stream_reader_move_to_prev_packet(avi_stream_reader *s, int call_receive_functions)
+{
+	avi_reader *r = NULL;
+	if (!s) return 0;
+	r = s->r;
+	fsize_t packet_no = s->cur_stream_packet_index ? s->cur_stream_packet_index - 1: 0;
+	fsize_t packet_no_avi = s->cur_packet_index ? s->cur_packet_index - 1 : 0;
+	fsize_t cur_byte_offset = s->cur_stream_byte_offset - s->cur_packet_len;
+	int stream_id = s->stream_id;
+
+	// The kickstart of the packet seeking
+	if (!s->cur_packet_offset)
+	{
+		packet_no = 0;
+		packet_no_avi = 0;
+		cur_byte_offset = 0;
+		s->cur_packet_offset = r->stream_data_offset;
+		s->cur_packet_len = 0;
+		s->cur_stream_byte_offset = 0;
+		s->cur_stream_packet_index = 0;
+	}
+
+	int packet_found = 0;
+	if (r->idx_offset && r->num_indices)
+	{
+		fsize_t start_of_movi = r->stream_data_offset - 4;
+		avi_index_entry index;
+		for (fssize_t i = packet_no_avi; i >= 0; i--)
+		{
+			int stream_no;
+			char fourcc_buf[5] = { 0 };
+			if (!must_seek(r, r->idx_offset + i * (sizeof index))) goto ErrRet;
+			if (!must_read(r, &index, sizeof index)) goto ErrRet;
+			*(uint32_t *)fourcc_buf = index.dwChunkId;
+			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
+			if (stream_no == stream_id)
+			{
+				fsize_t offset = index.dwOffset + start_of_movi + 8;
+				if (!s->mute_cur_stream_debug_print)
+				{
+					DEBUG_PRINTF(r, "Successfully found packet %"PRIfsize_t"(%"PRIfsize_t") of the stream %d: Offset = 0x%"PRIxfsize_t", Length = 0x%"PRIx32"." NL, packet_no, packet_no_avi, stream_id, offset, index.dwSize);
+				}
+				s->cur_4cc = index.dwChunkId;
+				s->cur_packet_index = i;
+				s->cur_packet_offset = offset;
+				s->cur_packet_len = index.dwSize;
+				s->cur_stream_packet_index = packet_no;
+				s->cur_stream_byte_offset = cur_byte_offset;
+				s->is_no_more_packets = 0;
+				packet_found = 1;
+				if (call_receive_functions)
+				{
+					if (!avi_stream_reader_call_callback_functions(s)) goto ErrRet;
+				}
+				break;
+			}
+		}
+		if (!packet_found)
+		{
+			WARN_PRINTF(r, "Could not find packet %"PRIfsize_t" for the stream id %d." NL, packet_no, stream_id);
+			return 0;
+		}
+	}
+	else
+	{
+		s->cur_packet_offset = 0;
+	}
+
+	return 1;
+ErrRet:
+	if (r) FATAL_PRINTF(r, "`avi_stream_reader_move_to_prev_packet()` failed." NL, 0);
+	return 0;
+}
+
 AVI_FUNC int avi_stream_reader_is_end_of_stream(avi_stream_reader *s)
 {
 	if (!s) return 1;
