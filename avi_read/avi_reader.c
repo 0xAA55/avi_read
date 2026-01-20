@@ -878,6 +878,7 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 		s->cur_packet_offset = r->stream_data_offset;
 		s->cur_packet_len = 0;
 		s->cur_stream_byte_offset = 0;
+		s->cur_stream_packet_index = 0;
 	}
 
 	int packet_found = 0;
