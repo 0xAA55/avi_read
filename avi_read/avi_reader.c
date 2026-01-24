@@ -488,17 +488,17 @@ int avi_reader_init
 		case FCC_idx1:
 		case FCC_idx1_:
 			INFO_PRINTF(r, "Reading toplevel chunk \"idx1\"" NL, 0);
-			if (!must_tell(r, &r->idx_offset)) goto ErrRet;
+			if (!must_tell(r, &r->idx1_offset)) goto ErrRet;
 			r->num_indices = chunk_size / sizeof(avi_index_entry);
 			break;
 		}
 		// Skip the current chunk
 		if (!must_seek(r, end_of_chunk)) goto ErrRet;
-		got_all_we_need = r->num_streams && r->stream_data_offset && ((has_index && r->idx_offset) || !has_index);
+		got_all_we_need = r->num_streams && r->stream_data_offset && ((has_index && r->idx1_offset) || !has_index);
 		if (end_of_chunk == r->end_of_file) break;
 	}
 
-	if (!r->idx_offset)
+	if (!r->idx1_offset)
 	{
 		WARN_PRINTF(r, "No AVI index: per-stream seeking requires per-packet file traversal." NL, 0);
 	}
@@ -880,7 +880,7 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 	}
 
 	int packet_found = 0;
-	if (r->idx_offset && r->num_indices)
+	if (r->idx1_offset && r->num_indices)
 	{
 		if (!s->mute_cur_stream_debug_print && packet_no == 0)
 		{
@@ -892,7 +892,7 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 		{
 			int stream_no;
 			char fourcc_buf[5] = { 0 };
-			if (!must_seek(r, r->idx_offset + i * (sizeof index))) goto ErrRet;
+			if (!must_seek(r, r->idx1_offset + i * (sizeof index))) goto ErrRet;
 			if (!must_read(r, &index, sizeof index)) goto ErrRet;
 			*(uint32_t *)fourcc_buf = index.dwChunkId;
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;
@@ -1033,7 +1033,7 @@ AVI_FUNC int avi_stream_reader_move_to_prev_packet(avi_stream_reader *s, int cal
 	}
 
 	int packet_found = 0;
-	if (r->idx_offset && r->num_indices)
+	if (r->idx1_offset && r->num_indices)
 	{
 		fsize_t start_of_movi = r->stream_data_offset - 4;
 		avi_index_entry index;
@@ -1041,7 +1041,7 @@ AVI_FUNC int avi_stream_reader_move_to_prev_packet(avi_stream_reader *s, int cal
 		{
 			int stream_no;
 			char fourcc_buf[5] = { 0 };
-			if (!must_seek(r, r->idx_offset + i * (sizeof index))) goto ErrRet;
+			if (!must_seek(r, r->idx1_offset + i * (sizeof index))) goto ErrRet;
 			if (!must_read(r, &index, sizeof index)) goto ErrRet;
 			*(uint32_t *)fourcc_buf = index.dwChunkId;
 			if (sscanf(fourcc_buf, "%d", &stream_no) != 1) continue;

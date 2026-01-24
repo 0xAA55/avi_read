@@ -101,7 +101,7 @@ typedef struct
 	fsize_t stream_data_offset;
 
 	/// The `idx1` chunk offset. If the AVI file has an `idx1` chunk, seeking in this AVI file would be very fast and cheap.
-	fsize_t idx_offset;
+	fsize_t idx1_offset;
 
 	/// Number of entries in the `idx1` chunk.
 	fsize_t num_indices;
