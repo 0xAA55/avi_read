@@ -222,7 +222,7 @@ AVI_FUNC static void default_logprintf(void *userdata, const char *format, ...)
 	(void)userdata;
 }
 
-int avi_reader_init
+AVI_FUNC int avi_reader_init
 (
 	avi_reader *r,
 	void *userdata,
