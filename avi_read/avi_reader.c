@@ -39,6 +39,7 @@
 #define FCC_strf MAKE4CC('s', 't', 'r', 'f')
 #define FCC_strd MAKE4CC('s', 't', 'r', 'd')
 #define FCC_strn MAKE4CC('s', 't', 'r', 'n')
+#define FCC_indx MAKE4CC('i', 'n', 'd', 'x')
 #define FCC_JUNK_ MAKE4CC_('J', 'U', 'N', 'K')
 #define FCC_LIST_ MAKE4CC_('L', 'I', 'S', 'T')
 #define FCC_hdrl_ MAKE4CC_('h', 'd', 'r', 'l')
@@ -49,6 +50,7 @@
 #define FCC_strf_ MAKE4CC_('s', 't', 'r', 'f')
 #define FCC_strd_ MAKE4CC_('s', 't', 'r', 'd')
 #define FCC_strn_ MAKE4CC_('s', 't', 'r', 'n')
+#define FCC_indx_ MAKE4CC_('i', 'n', 'd', 'x')
 #define TCC_db MAKE2CC('d', 'b')
 #define TCC_dc MAKE2CC('d', 'c')
 #define TCC_pc MAKE2CC('p', 'c')
@@ -360,6 +362,11 @@ AVI_FUNC int avi_reader_init
 									case FCC_JUNK:
 									case FCC_JUNK_:
 										INFO_PRINTF(r, "Skipping chunk \"%s\"" NL, strl_fourcc);
+										break;
+									case FCC_indx:
+									case FCC_indx_:
+										INFO_PRINTF(r, "Reading the index chunk \"%s\"" NL, strl_fourcc);
+										stream_data->stream_indx_offset = strl_chunk_pos;
 										break;
 									case FCC_strh:
 									case FCC_strh_:
