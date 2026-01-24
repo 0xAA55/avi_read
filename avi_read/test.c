@@ -251,7 +251,7 @@ static int my_avi_player_play(my_avi_player *p)
 
         if (have_video)
         {
-            uint64_t target_v_frame_no = avi_video_get_frame_number_by_time(s_video, relative_time_ms);
+            fsize_t target_v_frame_no = avi_video_get_frame_number_by_time(s_video, relative_time_ms);
 
             avi_video_seek_to_frame_index(s_video, target_v_frame_no, 1);
         }
@@ -261,7 +261,7 @@ static int my_avi_player_play(my_avi_player *p)
             int new_packet_got = 0;
             int num_playing = 0;
             int num_idle = 0;
-            uint64_t target_a_byte_pos = avi_audio_get_target_byte_offset_by_time(s_audio, relative_time_ms);
+            fsize_t target_a_byte_pos = avi_audio_get_target_byte_offset_by_time(s_audio, relative_time_ms);
 
 #if WINDOWS_DEMO
             // Make sure all buffers are used for playing
