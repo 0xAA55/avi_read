@@ -108,6 +108,29 @@ typedef struct
 	palette_entry palette[256];
 } avi_palette_change_max_size;
 
+typedef struct
+{
+	uint64_t offset;
+	uint32_t size;
+	uint32_t duration;
+} avi_super_index_entry;
+
+typedef struct
+{
+	uint32_t offset;
+	uint32_t size;
+} avi_stdindex_entry;
+
+typedef struct
+{
+	uint16_t longs_per_entry;
+	uint8_t index_sub_type;
+	uint8_t index_type;
+	uint32_t chunk_id;
+	uint32_t entries_in_use;
+	uint32_t reserved[3];
+} avi_meta_index;
+
 #pragma pack(pop)
 
 #define BI_RGB 0
