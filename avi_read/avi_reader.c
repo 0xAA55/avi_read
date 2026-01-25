@@ -640,18 +640,27 @@ AVI_FUNC static avi_indx_cached_entry *avi_indx_read_entry(avi_stream_reader *s,
 		cached = cached->next;
 	} while (cached);
 
+	INFO_PRINTF(r, "Reading super index %u for stream %u" NL, entry_index, s->stream_id);
+
 	cached = indx->cache_tail;
 	avi_indx_move_cache_to_head(s, cached);
 	cached->index = entry_index;
 	if (!must_seek(r, indx->offset_to_first_entry + entry_index * sizeof si)) goto FailExit;
 	if (!must_read(r, &si, sizeof si)) goto FailExit;
-	if (!must_seek(r, (fsize_t)si.offset)) goto FailExit;
+	if (!must_seek(r, (fsize_t)si.offset + 8)) goto FailExit;
 	if (!must_read(r, &mi, sizeof mi)) goto FailExit;
+	if (mi.longs_per_entry != 2 || mi.index_type != 1 || mi.index_sub_type != 0)
+	{
+		FATAL_PRINTF(r, "Standard index chunk expected." NL, 0);
+		return 0;
+	}
 	cached->offset = (fsize_t)si.offset;
 	cached->length = si.size;
 	cached->start_packet_number = entry_index ? -1 : 0;
 	cached->num_packets = mi.entries_in_use;
 	cached->duration = si.duration;
+	cached->chunk_id = mi.chunk_id;
+	cached->chunk_base_offset = mi.reserved[0];
 	return cached;
 FailExit:
 	if (cached) cached->offset = 0;
@@ -667,14 +676,12 @@ AVI_FUNC static int avi_indx_seek_to_packet(avi_stream_reader *s, uint64_t packe
 
 	if (indx->is_super)
 	{
-		avi_meta_index mi;
 		for(;;)
 		{
 			uint32_t cur_entry_index = indx->last_cache_index;
 			avi_indx_cached_entry *cache;
 			uint32_t cur_entry_packets;
 			fsize_t entry_offset;
-			uint32_t base_offset;
 			if (cur_entry_index >= indx->num_entries)
 			{
 				s->is_no_more_packets = 1;
@@ -719,22 +726,14 @@ AVI_FUNC static int avi_indx_seek_to_packet(avi_stream_reader *s, uint64_t packe
 				indx->last_cache_index++;
 				continue;
 			}
-			if (!must_seek(r, cache->offset + 8)) return 0;
-			if (!must_read(r, &mi, sizeof mi)) return 0;
-			if (mi.longs_per_entry != 2 || mi.index_type != 1 || mi.index_sub_type != 0)
-			{
-				FATAL_PRINTF(r, "Standard index chunk expected." NL, 0);
-				return 0;
-			}
-			base_offset = mi.reserved[0];
 			entry_offset = cache->offset + 8 + sizeof(avi_meta_index);
 			if (!must_seek(r, (fsize_t)(entry_offset + packet_index * sizeof si))) return 0;
 			if (!must_read(r, &si, sizeof si)) return 0;
 			s->is_no_more_packets = 0;
-			s->cur_4cc = mi.chunk_id;
+			s->cur_4cc = cache->chunk_id;
 			s->cur_packet_index = (fsize_t)packet_index;
 			s->cur_stream_packet_index = (fsize_t)packet_index;
-			s->cur_packet_offset = si.offset + base_offset;
+			s->cur_packet_offset = si.offset + cache->chunk_base_offset;
 			s->cur_packet_len = si.size;
 			return 1;
 		}

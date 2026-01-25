@@ -78,6 +78,8 @@ typedef struct avi_indx_cached_entry_s
 	uint32_t index;
 	fsize_t offset;
 	uint32_t length;
+	uint32_t chunk_id;
+	uint32_t chunk_base_offset;
 	int64_t start_packet_number;
 	uint32_t num_packets;
 	uint32_t duration;
