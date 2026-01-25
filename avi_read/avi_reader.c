@@ -601,6 +601,27 @@ ErrRet:
 	return 0;
 }
 
+AVI_FUNC static void avi_indx_move_cache_to_head(avi_stream_reader *s, avi_indx_cached_entry *cached)
+{
+	avi_indx_cache *indx = &s->indx;
+
+	avi_indx_cached_entry *prev = cached->prev;
+	avi_indx_cached_entry *next = cached->next;
+	if (cached == indx->cache_head) return;
+	if (prev) prev->next = next;
+	if (next) next->prev = prev;
+	if (cached == indx->cache_tail)
+	{
+		indx->cache_tail = prev;
+		if (prev) prev->next = NULL;
+	}
+	if (indx->cache_head)
+		indx->cache_head->prev = cached;
+	cached->prev = NULL;
+	cached->next = indx->cache_head;
+	indx->cache_head = cached;
+}
+
 AVI_FUNC int avi_get_stream_reader
 (
 	avi_reader *r,
