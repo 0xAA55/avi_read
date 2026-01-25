@@ -23,6 +23,10 @@ typedef int64_t fssize_t;
 #define AVI_MAX_STREAMS 8
 #endif
 
+#ifndef AVI_MAX_INDX_CACHE
+#define AVI_MAX_INDX_CACHE 16
+#endif
+
 #ifndef AVI_MAX_STREAM_NAME
 #define AVI_MAX_STREAM_NAME 64
 #endif
@@ -38,6 +42,7 @@ typedef struct
 	fsize_t stream_format_len;
 	fsize_t stream_additional_header_data_offset;
 	fsize_t stream_additional_header_data_len;
+	fsize_t stream_indx_offset;
 	char stream_name[AVI_MAX_STREAM_NAME];
 	int format_data_is_valid;
 	union
@@ -67,6 +72,31 @@ typedef enum
 	PRINT_INFO = 3,
 	PRINT_DEBUG = 4,
 }avi_logprintf_level;
+
+typedef struct avi_indx_cached_entry_s
+{
+	uint32_t index;
+	fsize_t offset;
+	uint32_t length;
+	int64_t start_packet_number;
+	uint32_t num_packets;
+	uint32_t duration;
+	struct avi_indx_cached_entry_s *prev;
+	struct avi_indx_cached_entry_s *next;
+}avi_indx_cached_entry;
+
+typedef struct
+{
+	avi_indx_cached_entry cache[AVI_MAX_INDX_CACHE];
+	avi_indx_cached_entry *cache_head;
+	avi_indx_cached_entry *cache_tail;
+	uint32_t num_entries;
+	fsize_t offset_to_first_entry;
+	uint32_t last_cache_index;
+	int is_super;
+	uint32_t base_offset;
+	uint32_t chunk_id;
+}avi_indx_cache;
 
 /// <summary>
 /// The core struct of this library, stores the critical informations about the AVI file.
@@ -117,6 +147,9 @@ typedef struct
 
 	/// The short path to `r->avi_stream_info[self->stream_id]`
 	avi_stream_info *stream_info;
+
+	/// The `indx` chunk for this stream. If the AVI file is very large, an `idx1` chunk doens't enough.
+	avi_indx_cache indx;
 
 	/// Is this stream ended?
 	int is_no_more_packets;
