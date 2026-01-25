@@ -1127,6 +1127,7 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 	if (s->indx.num_entries != 0)
 	{
 		if (!avi_indx_seek_to_packet(s, packet_no)) goto ErrRet;
+		s->cur_stream_byte_offset = cur_byte_offset;
 		if (call_receive_functions) if (!avi_stream_reader_call_callback_functions(s)) goto ErrRet;
 		return 1;
 	}
@@ -1286,6 +1287,7 @@ AVI_FUNC int avi_stream_reader_move_to_prev_packet(avi_stream_reader *s, int cal
 	if (s->indx.num_entries != 0)
 	{
 		if (!avi_indx_seek_to_packet(s, packet_no)) goto ErrRet;
+		s->cur_stream_byte_offset = cur_byte_offset;
 		if (call_receive_functions) if (!avi_stream_reader_call_callback_functions(s)) goto ErrRet;
 		return 1;
 	}
