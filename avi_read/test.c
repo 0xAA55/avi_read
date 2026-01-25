@@ -84,13 +84,16 @@ static fssize_t my_avi_player_read(void *buffer, size_t len, void *userdata)
 static fssize_t my_avi_player_seek(fsize_t offset, void *userdata)
 {
     my_avi_player *p = userdata;
-    return fseek(p->fp, offset, SEEK_SET) ? -1 : (fssize_t)offset;
+    fpos_t pos = offset;
+    return fsetpos(p->fp, &pos) ? -1 : (fssize_t)offset;
 }
 
 static fssize_t my_avi_player_tell(void *userdata)
 {
     my_avi_player *p = userdata;
-    return ftell(p->fp);
+    fpos_t pos = -1;
+    fgetpos(p->fp, &pos);
+    return (fssize_t)pos;
 }
 
 static fssize_t my_avi_video_read(void *buffer, size_t len, void *userdata)
@@ -102,13 +105,16 @@ static fssize_t my_avi_video_read(void *buffer, size_t len, void *userdata)
 static fssize_t my_avi_video_seek(fsize_t offset, void *userdata)
 {
     my_avi_player *p = userdata;
-    return fseek(p->fp_video, offset, SEEK_SET) ? -1 : (fssize_t)offset;
+    fpos_t pos = offset;
+    return fsetpos(p->fp, &pos) ? -1 : (fssize_t)offset;
 }
 
 static fssize_t my_avi_video_tell(void *userdata)
 {
     my_avi_player *p = userdata;
-    return ftell(p->fp_video);
+    fpos_t pos = -1;
+    fgetpos(p->fp, &pos);
+    return (fssize_t)pos;
 }
 
 static fssize_t my_avi_audio_read(void *buffer, size_t len, void *userdata)
@@ -120,13 +126,16 @@ static fssize_t my_avi_audio_read(void *buffer, size_t len, void *userdata)
 static fssize_t my_avi_audio_seek(fsize_t offset, void *userdata)
 {
     my_avi_player *p = userdata;
-    return fseek(p->fp_audio, offset, SEEK_SET) ? -1 : (fssize_t)offset;
+    fpos_t pos = offset;
+    return fsetpos(p->fp, &pos) ? -1 : (fssize_t)offset;
 }
 
 static fssize_t my_avi_audio_tell(void *userdata)
 {
     my_avi_player *p = userdata;
-    return ftell(p->fp_audio);
+    fpos_t pos = -1;
+    fgetpos(p->fp, &pos);
+    return (fssize_t)pos;
 }
 
 static void my_avi_player_on_video_cb(fsize_t offset, fsize_t length, void *userdata)
