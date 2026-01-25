@@ -622,6 +622,43 @@ AVI_FUNC static void avi_indx_move_cache_to_head(avi_stream_reader *s, avi_indx_
 	indx->cache_head = cached;
 }
 
+AVI_FUNC static avi_indx_cached_entry *avi_indx_read_entry(avi_stream_reader *s, uint32_t entry_index)
+{
+	avi_reader *r = s->r;
+	avi_indx_cache *indx = &s->indx;
+	avi_indx_cached_entry *cached = indx->cache_head;
+	avi_super_index_entry si;
+	avi_meta_index mi;
+
+	if (entry_index >= indx->num_entries) return NULL;
+	if (!cached) return NULL;
+	if (!indx->is_super) return NULL;
+
+	do
+	{
+		if (cached->index == entry_index && cached->offset != 0) return cached;
+		cached = cached->next;
+	} while (cached);
+
+	cached = indx->cache_tail;
+	avi_indx_move_cache_to_head(s, cached);
+	cached->index = entry_index;
+	if (!must_seek(r, indx->offset_to_first_entry + entry_index * sizeof si)) goto FailExit;
+	if (!must_read(r, &si, sizeof si)) goto FailExit;
+	if (!must_seek(r, (fsize_t)si.offset)) goto FailExit;
+	if (!must_read(r, &mi, sizeof mi)) goto FailExit;
+	cached->offset = (fsize_t)si.offset;
+	cached->length = si.size;
+	cached->start_packet_number = entry_index ? -1 : 0;
+	cached->num_packets = mi.entries_in_use;
+	cached->duration = si.duration;
+	return cached;
+FailExit:
+	if (cached) cached->offset = 0;
+	WARN_PRINTF(r, "`avi_indx_read_entry(%u)` failed." NL, entry_index);
+	return NULL;
+}
+
 AVI_FUNC int avi_get_stream_reader
 (
 	avi_reader *r,
