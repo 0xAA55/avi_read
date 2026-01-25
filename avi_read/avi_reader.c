@@ -1124,7 +1124,13 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 	}
 
 	int packet_found = 0;
-	if (r->idx1_offset && r->num_indices)
+	if (s->indx.num_entries != 0)
+	{
+		if (!avi_indx_seek_to_packet(s, packet_no)) goto ErrRet;
+		if (call_receive_functions) if (!avi_stream_reader_call_callback_functions(s)) goto ErrRet;
+		return 1;
+	}
+	else if (r->idx1_offset && r->num_indices)
 	{
 		if (!s->mute_cur_stream_debug_print && packet_no == 0)
 		{
@@ -1277,7 +1283,13 @@ AVI_FUNC int avi_stream_reader_move_to_prev_packet(avi_stream_reader *s, int cal
 	}
 
 	int packet_found = 0;
-	if (r->idx1_offset && r->num_indices)
+	if (s->indx.num_entries != 0)
+	{
+		if (!avi_indx_seek_to_packet(s, packet_no)) goto ErrRet;
+		if (call_receive_functions) if (!avi_stream_reader_call_callback_functions(s)) goto ErrRet;
+		return 1;
+	}
+	else if (r->idx1_offset && r->num_indices)
 	{
 		fsize_t start_of_movi = r->stream_data_offset - 4;
 		avi_index_entry index;
