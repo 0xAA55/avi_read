@@ -523,6 +523,84 @@ AVI_FUNC static void default_on_stream_data_cb(fsize_t offset, fsize_t length, v
 	(void)userdata;
 }
 
+AVI_FUNC static int avi_setup_indx_cache(avi_stream_reader *s, fsize_t indx_offset)
+{
+	avi_meta_index mi;
+	avi_reader *r = s->r;
+	avi_indx_cache *indx = &s->indx;
+	fsize_t cur_offset;
+
+	if (!indx_offset)
+	{
+		INFO_PRINTF(r, "Stream %d doesn't have a 'indx' chunk." NL, s->stream_id);
+		indx->offset_to_first_entry = 0;
+		return 1;
+	}
+	else
+	{
+		INFO_PRINTF(r, "Reading the 'indx' chunk of stream %d." NL, s->stream_id);
+	}
+
+	if (!must_tell_s(s, &cur_offset)) goto ErrRet;
+	if (!must_seek_s(s, indx_offset)) goto ErrRet;
+	if (!must_read_s(s, &mi, sizeof mi)) goto ErrRet;
+	if (!must_seek_s(s, cur_offset)) goto ErrRet;
+	cur_offset = 0;
+
+	indx->offset_to_first_entry = indx_offset + sizeof(avi_meta_index);
+	indx->num_entries = mi.entries_in_use;
+	indx->chunk_id = mi.chunk_id;
+
+	switch (mi.index_type)
+	{
+	case 0:
+		if (mi.longs_per_entry != 4)
+		{
+			WARN_PRINTF(r, "The 'indx' chunk is a super index chunk but `longs_per_entry` is %u, it should be 4." NL, mi.longs_per_entry);
+			goto ErrRet;
+		}
+		if (mi.index_sub_type != 0)
+		{
+			WARN_PRINTF(r, "The 'indx' chunk is a super index chunk but `index_sub_type` is %u, it should be 0." NL, mi.index_sub_type);
+			goto ErrRet;
+		}
+		indx->is_super = 1;
+		break;
+	case 1:
+		if (mi.longs_per_entry != 2)
+		{
+			WARN_PRINTF(r, "The 'indx' chunk is a standard index chunk but `longs_per_entry` is %u, it should be 2." NL, mi.longs_per_entry);
+			goto ErrRet;
+		}
+		if (mi.index_sub_type != 0)
+		{
+			WARN_PRINTF(r, "The 'indx' chunk is a standard index chunk but `index_sub_type` is %u, it should be 0." NL, mi.index_sub_type);
+			goto ErrRet;
+		}
+		indx->is_super = 0;
+		indx->base_offset = mi.reserved[0];
+		break;
+	default:
+		WARN_PRINTF(r, "Unknown 'indx' chunk type: %u." NL, mi.index_type);
+		goto ErrRet;
+	}
+
+	indx->cache_head = &indx->cache[0];
+	indx->cache_tail = &indx->cache[AVI_MAX_INDX_CACHE - 1];
+	for (size_t i = 0; i < AVI_MAX_INDX_CACHE; i++)
+	{
+		avi_indx_cached_entry *cached = &indx->cache[i];
+		cached->prev = (i == 0) ? NULL : &indx->cache[i - 1];
+		cached->next = (i == AVI_MAX_INDX_CACHE - 1) ? NULL : &indx->cache[i + 1];
+	}
+
+	return 1;
+ErrRet:
+	if (cur_offset) must_seek_s(s, cur_offset);
+	WARN_PRINTF(r, "Stream %d read 'indx' chunk failed." NL, s->stream_id);
+	return 0;
+}
+
 AVI_FUNC int avi_get_stream_reader
 (
 	avi_reader *r,
@@ -562,6 +640,8 @@ AVI_FUNC int avi_get_stream_reader
 	s_out->on_video = on_video;
 	s_out->on_palette_change = on_palette_change;
 	s_out->on_audio = on_audio;
+
+	if (!avi_setup_indx_cache(s_out, s_out->stream_info->stream_indx_offset)) goto ErrRet;
 
 	return 1;
 ErrRet:
