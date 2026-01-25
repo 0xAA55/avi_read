@@ -659,6 +659,105 @@ FailExit:
 	return NULL;
 }
 
+AVI_FUNC static int avi_indx_seek_to_packet(avi_stream_reader *s, uint64_t packet_index)
+{
+	avi_reader *r = s->r;
+	avi_indx_cache *indx = &s->indx;
+	avi_stdindex_entry si;
+
+	if (indx->is_super)
+	{
+		avi_meta_index mi;
+		for(;;)
+		{
+			uint32_t cur_entry_index = indx->last_cache_index;
+			avi_indx_cached_entry *cache;
+			uint32_t cur_entry_packets;
+			fsize_t entry_offset;
+			uint32_t base_offset;
+			if (cur_entry_index >= indx->num_entries)
+			{
+				s->is_no_more_packets = 1;
+				return 0;
+			}
+			cache = avi_indx_read_entry(s, cur_entry_index);
+			if (!cache) return 0;
+			if (cache->start_packet_number == -1)
+			{
+				uint32_t p_entry_index = cur_entry_index - 1;
+				int64_t start_packet_number;
+				for (;;)
+				{
+					cache = avi_indx_read_entry(s, p_entry_index);
+					if (!cache) return 0;
+					start_packet_number = cache->start_packet_number;
+					if (start_packet_number < 0)
+					{
+						if (!p_entry_index) cache->start_packet_number = 0;
+						else p_entry_index--;
+						continue;
+					}
+					else break;
+				}
+				for (; p_entry_index <= cur_entry_index; p_entry_index++)
+				{
+					cache = avi_indx_read_entry(s, p_entry_index);
+					if (!cache) return 0;
+					cache->start_packet_number = start_packet_number;
+					cur_entry_packets = cache->num_packets;
+					start_packet_number += cur_entry_packets;
+				}
+			}
+			cur_entry_packets = cache->num_packets;
+			if ((uint64_t)cache->start_packet_number > packet_index)
+			{
+				indx->last_cache_index--;
+				continue;
+			}
+			if ((uint64_t)cache->start_packet_number + cur_entry_packets <= packet_index)
+			{
+				indx->last_cache_index++;
+				continue;
+			}
+			if (!must_seek(r, cache->offset + 8)) return 0;
+			if (!must_read(r, &mi, sizeof mi)) return 0;
+			if (mi.longs_per_entry != 2 || mi.index_type != 1 || mi.index_sub_type != 0)
+			{
+				FATAL_PRINTF(r, "Standard index chunk expected." NL, 0);
+				return 0;
+			}
+			base_offset = mi.reserved[0];
+			entry_offset = cache->offset + 8 + sizeof(avi_meta_index);
+			if (!must_seek(r, (fsize_t)(entry_offset + packet_index * sizeof si))) return 0;
+			if (!must_read(r, &si, sizeof si)) return 0;
+			s->is_no_more_packets = 0;
+			s->cur_4cc = mi.chunk_id;
+			s->cur_packet_index = (fsize_t)packet_index;
+			s->cur_stream_packet_index = (fsize_t)packet_index;
+			s->cur_packet_offset = si.offset + base_offset;
+			s->cur_packet_len = si.size;
+			return 1;
+		}
+	}
+	else
+	{
+		if (packet_index >= indx->num_entries)
+		{
+			s->is_no_more_packets = 1;
+			return 0;
+		}
+		if (!must_seek(r, (fsize_t)(indx->offset_to_first_entry + packet_index * sizeof si))) return 0;
+		if (!must_read(r, &si, sizeof si)) return 0;
+		s->is_no_more_packets = 0;
+		s->cur_4cc = indx->chunk_id;
+		s->cur_packet_index = (fsize_t)packet_index;
+		s->cur_stream_packet_index = (fsize_t)packet_index;
+		s->cur_packet_offset = si.offset + indx->base_offset;
+		s->cur_packet_len = si.size;
+		return 1;
+	}
+}
+
 AVI_FUNC int avi_get_stream_reader
 (
 	avi_reader *r,
