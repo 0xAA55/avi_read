@@ -110,7 +110,7 @@ AVI_FUNC static int must_match(avi_reader *r, const char *fourcc)
 AVI_FUNC static int must_read(avi_reader *r, void *buffer, size_t len)
 {
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
-	if (rl < 0)
+	if (rl == -1)
 	{
 		FATAL_PRINTF(r, "Read %u bytes failed." NL, (unsigned int)len);
 		return 0;
@@ -129,7 +129,7 @@ AVI_FUNC static int must_read(avi_reader *r, void *buffer, size_t len)
 AVI_FUNC static int must_tell(avi_reader *r, fsize_t *cur_pos)
 {
 	fssize_t told = r->f_tell(r->userdata);
-	if (told < 0)
+	if (told == -1)
 	{
 		FATAL_PRINTF(r, "`f_tell()` failed." NL, 0);
 		return 0;
@@ -144,7 +144,7 @@ AVI_FUNC static int must_tell(avi_reader *r, fsize_t *cur_pos)
 AVI_FUNC static int must_seek(avi_reader *r, fsize_t target)
 {
 	fssize_t told = r->f_seek(target, r->userdata);
-	if (told < 0)
+	if (told == -1)
 	{
 		FATAL_PRINTF(r, "`f_seek(%x)` failed." NL, target);
 		return 0;
@@ -170,7 +170,7 @@ AVI_FUNC static int must_match_s(avi_stream_reader *r, const char *fourcc)
 AVI_FUNC static int must_read_s(avi_stream_reader *r, void *buffer, size_t len)
 {
 	fssize_t rl = r->f_read(buffer, len, r->userdata);
-	if (rl < 0)
+	if (rl == -1)
 	{
 		FATAL_PRINTF(r->r, "Read %u bytes failed." NL, (unsigned int)len);
 		return 0;
@@ -189,7 +189,7 @@ AVI_FUNC static int must_read_s(avi_stream_reader *r, void *buffer, size_t len)
 AVI_FUNC static int must_tell_s(avi_stream_reader *r, fsize_t *cur_pos)
 {
 	fssize_t told = r->f_tell(r->userdata);
-	if (told < 0)
+	if (told == -1)
 	{
 		FATAL_PRINTF(r->r, "`f_tell()` failed." NL, 0);
 		return 0;
@@ -204,7 +204,7 @@ AVI_FUNC static int must_tell_s(avi_stream_reader *r, fsize_t *cur_pos)
 AVI_FUNC static int must_seek_s(avi_stream_reader *r, fsize_t target)
 {
 	fssize_t told = r->f_seek(target, r->userdata);
-	if (told < 0)
+	if (told == -1)
 	{
 		FATAL_PRINTF(r->r, "`f_seek(%x)` failed." NL, target);
 		return 0;
