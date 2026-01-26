@@ -662,6 +662,7 @@ AVI_FUNC static avi_indx_cached_entry *avi_indx_read_entry(avi_stream_reader *s,
 	cached->duration = si.duration;
 	cached->chunk_id = mi.chunk_id;
 	cached->chunk_base_offset = mi.reserved[0];
+	cached->cached_entries_start_index = -1;
 	return cached;
 FailExit:
 	if (cached) cached->offset = 0;
@@ -673,7 +674,6 @@ AVI_FUNC static int avi_indx_seek_to_packet(avi_stream_reader *s, uint64_t packe
 {
 	avi_reader *r = s->r;
 	avi_indx_cache *indx = &s->indx;
-	avi_stdindex_entry si;
 
 	if (indx->is_super)
 	{
@@ -682,7 +682,9 @@ AVI_FUNC static int avi_indx_seek_to_packet(avi_stream_reader *s, uint64_t packe
 			uint32_t cur_entry_index = indx->last_cache_index;
 			avi_indx_cached_entry *cache;
 			uint32_t cur_entry_packets;
+			fsize_t rel_entry_index;
 			fsize_t entry_offset;
+			avi_stdindex_entry *si;
 			if (cur_entry_index >= indx->num_entries)
 			{
 				s->is_no_more_packets = 1;
@@ -728,19 +730,30 @@ AVI_FUNC static int avi_indx_seek_to_packet(avi_stream_reader *s, uint64_t packe
 				continue;
 			}
 			entry_offset = cache->offset + 8 + sizeof(avi_meta_index);
-			if (!must_seek(r, (fsize_t)(entry_offset + (packet_index - cache->start_packet_number) * sizeof si))) return 0;
-			if (!must_read(r, &si, sizeof si)) return 0;
+			rel_entry_index = (fsize_t)(packet_index - cache->start_packet_number);
+			if (cache->cached_entries_start_index == -1 || rel_entry_index < cache->cached_entries_start_index || rel_entry_index >= cache->cached_entries_start_index + AVI_ENTRIES_PER_INDX_CACHE)
+			{
+				fsize_t num_entries_to_load = cache->num_packets - cache->start_packet_number;
+				if (num_entries_to_load > AVI_ENTRIES_PER_INDX_CACHE) num_entries_to_load = AVI_ENTRIES_PER_INDX_CACHE;
+				cache->cached_entries_start_index = (rel_entry_index / AVI_ENTRIES_PER_INDX_CACHE) * AVI_ENTRIES_PER_INDX_CACHE;
+				INFO_PRINTF(r, "Stream %d: loading entries from %"PRIfsize_t" to %"PRIfsize_t NL, s->stream_id, cache->cached_entries_start_index, cache->cached_entries_start_index + num_entries_to_load - 1);
+				if (!must_seek(r, (fsize_t)(entry_offset + cache->cached_entries_start_index * sizeof *si))) return 0;
+				if (!must_read(r, &cache->cached_entries, num_entries_to_load * sizeof * si)) return 0;
+			}
+			rel_entry_index %= AVI_ENTRIES_PER_INDX_CACHE;
+			si = &cache->cached_entries[rel_entry_index];
 			s->is_no_more_packets = 0;
 			s->cur_4cc = cache->chunk_id;
 			s->cur_packet_index = (fsize_t)packet_index;
 			s->cur_stream_packet_index = (fsize_t)packet_index;
-			s->cur_packet_offset = si.offset + cache->chunk_base_offset;
-			s->cur_packet_len = si.size;
+			s->cur_packet_offset = si->offset + cache->chunk_base_offset;
+			s->cur_packet_len = si->size;
 			return 1;
 		}
 	}
 	else
 	{
+		avi_stdindex_entry si;
 		if (packet_index >= indx->num_entries)
 		{
 			s->is_no_more_packets = 1;

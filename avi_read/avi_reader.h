@@ -24,7 +24,11 @@ typedef int64_t fssize_t;
 #endif
 
 #ifndef AVI_MAX_INDX_CACHE
-#define AVI_MAX_INDX_CACHE 16
+#define AVI_MAX_INDX_CACHE 4
+#endif
+
+#ifndef AVI_ENTRIES_PER_INDX_CACHE
+#define AVI_ENTRIES_PER_INDX_CACHE 128
 #endif
 
 #ifndef AVI_MAX_STREAM_NAME
@@ -83,6 +87,8 @@ typedef struct avi_indx_cached_entry_s
 	int64_t start_packet_number;
 	uint32_t num_packets;
 	uint32_t duration;
+	avi_stdindex_entry cached_entries[AVI_ENTRIES_PER_INDX_CACHE];
+	fssize_t cached_entries_start_index;
 	struct avi_indx_cached_entry_s *prev;
 	struct avi_indx_cached_entry_s *next;
 }avi_indx_cached_entry;
