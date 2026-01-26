@@ -57,6 +57,7 @@ typedef struct
     int audio_buffer_is_playing;
     HGLOBAL my_jpeg_picture_memory;
     size_t my_jpeg_picture_memory_size;
+    IStream *my_jpeg_stream;
     int should_quit;
     int exit_code;
 
@@ -147,10 +148,19 @@ void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
     GlobalUnlock(w->my_jpeg_picture_memory);
 
     // Here comes the COM part.
-    hr = CreateStreamOnHGlobal(my_jpeg_picture_memory, TRUE, &stream);
-    if (FAILED(hr)) goto Exit;
+    if (!w->my_jpeg_stream)
+    {
+        hr = CreateStreamOnHGlobal(w->my_jpeg_picture_memory, FALSE, &w->my_jpeg_stream);
+        if (FAILED(hr)) goto Exit;
+    }
+    else
+    {
+        LARGE_INTEGER li = { 0 };
+        hr = w->my_jpeg_stream->lpVtbl->Seek(w->my_jpeg_stream, li, STREAM_SEEK_SET, NULL);
+        if (FAILED(hr)) goto Exit;
+    }
 
-    hr = OleLoadPicture(stream, (LONG)vpb->jpeg_data_len, FALSE, &IID_IPicture, &picture);
+    hr = OleLoadPicture(w->my_jpeg_stream, (LONG)vpb->jpeg_data_len, FALSE, &IID_IPicture, &picture);
     if (FAILED(hr)) goto Exit;
 
     int32_t src_w = 0, src_h = 0;
@@ -172,7 +182,6 @@ void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
     }
 
 Exit:
-    if (stream) stream->lpVtbl->Release(stream);
     if (picture) picture->lpVtbl->Release(picture);
 }
 
@@ -463,6 +472,11 @@ LRESULT CALLBACK windows_demo_window_proc_W(HWND hWnd, uint32_t msg, WPARAM wp, 
 
 void windows_demo_destroy_window(WindowsDemoGuts *w)
 {
+    if (w->my_jpeg_stream)
+    {
+        w->my_jpeg_stream->lpVtbl->Release(w->my_jpeg_stream);
+        w->my_jpeg_stream = NULL;
+    }
     if (w->my_jpeg_picture_memory)
     {
         GlobalFree(w->my_jpeg_picture_memory);
