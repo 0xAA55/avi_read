@@ -225,7 +225,11 @@ static int my_avi_player_play(my_avi_player *p)
     uint64_t start_time = get_super_precise_time_in_ms();
 #ifdef WINDOWS_DEMO
     uint64_t left_key_press_time = start_time;
+    uint64_t right_key_press_time = start_time;
     int left_key_down = 0;
+    int right_key_down = 0;
+    uint64_t go_back;
+    uint64_t go_forward;
 #endif
     while (have_video || have_audio)
     {
@@ -235,13 +239,12 @@ static int my_avi_player_play(my_avi_player *p)
 #if WINDOWS_DEMO
         if (GetAsyncKeyState(VK_LEFT))
         {
-            uint64_t go_back = (cur_time - left_key_press_time);
             if (!left_key_down)
             {
                 left_key_press_time = cur_time;
                 left_key_down = 1;
             }
-            go_back *= 2;
+            go_back = (cur_time - left_key_press_time) * 4;
             if (go_back > relative_time_ms) go_back = relative_time_ms;
             relative_time_ms -= go_back;
             printf("Go back: %llu      \r", go_back);
@@ -250,10 +253,33 @@ static int my_avi_player_play(my_avi_player *p)
         {
             if (left_key_down)
             {
-                uint64_t go_back = (cur_time - left_key_press_time);
-                start_time += go_back * 2;
+                go_back = (cur_time - left_key_press_time) * 4;
+                start_time += go_back;
                 if (start_time > cur_time) start_time = cur_time;
                 left_key_down = 0;
+                relative_time_ms -= go_back;
+            }
+        }
+        if (GetAsyncKeyState(VK_RIGHT))
+        {
+            if (!right_key_down)
+            {
+                right_key_press_time = cur_time;
+                right_key_down = 1;
+            }
+            go_forward = (cur_time - right_key_press_time) * 4;
+            if (go_forward > relative_time_ms) go_forward = relative_time_ms;
+            relative_time_ms += go_forward;
+            printf("Go forward: %llu      \r", go_forward);
+        }
+        else
+        {
+            if (right_key_down)
+            {
+                go_forward = (cur_time - right_key_press_time) * 4;
+                start_time -= go_forward;
+                right_key_down = 0;
+                relative_time_ms += go_forward;
             }
         }
 #endif
