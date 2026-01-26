@@ -76,6 +76,8 @@ void _jmp_to_new_stack(void *stack_buffer, size_t stack_size, void(*function_to_
 void _on_syscommand_sizemove(WindowsDemoGuts *w);
 #endif
 
+uint64_t get_super_precise_time_in_ms();
+
 int apb_is_playing(AudioPlayBuffer *apb)
 {
     return (apb->whdr.dwFlags & WHDR_INQUEUE) == WHDR_INQUEUE;
@@ -111,6 +113,7 @@ int apb_test_and_set_to_idle(AudioPlayBuffer *apb, WindowsDemoGuts *w)
 
 void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
 {
+    uint64_t time_start = get_super_precise_time_in_ms();
     // I'm using the very very old way to convert JPEG to BMP, because it supports C.
     // Older than WIC, and older than Gdiplus, older than C++ smart pointers.
     HGLOBAL my_jpeg_picture_memory = GlobalAlloc(GMEM_MOVEABLE, vpb->jpeg_data_len);
@@ -144,6 +147,12 @@ void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
     GetClientRect(w->Window, &rc);
     hr = picture->lpVtbl->Render(picture, w->hDC, 0, rc.bottom - 1, (int32_t)rc.right, -(int32_t)rc.bottom, 0, 0, src_w, src_h, NULL);
     if (FAILED(hr)) goto Exit;
+
+    uint32_t time_usage = (uint32_t)(get_super_precise_time_in_ms() - time_start);
+    if (time_usage >= 30)
+    {
+        printf("[INFO] Display a JPEG frame used %u ms\n", time_usage);
+    }
 
 Exit:
     if (stream) stream->lpVtbl->Release(stream);
