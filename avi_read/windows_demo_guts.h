@@ -113,6 +113,8 @@ int apb_test_and_set_to_idle(AudioPlayBuffer *apb, WindowsDemoGuts *w)
 
 void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
 {
+    HRESULT hr = S_OK;
+    IPicture *picture = NULL;
     uint64_t time_start = get_super_precise_time_in_ms();
     // I'm using the very very old way to convert JPEG to BMP, because it supports C.
     // Older than WIC, and older than Gdiplus, older than C++ smart pointers.
@@ -127,12 +129,9 @@ void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
     GlobalUnlock(my_jpeg_picture_memory);
 
     // Here comes the COM part.
-    HRESULT hr = S_OK;
-    IStream *stream = NULL;
     hr = CreateStreamOnHGlobal(my_jpeg_picture_memory, TRUE, &stream);
     if (FAILED(hr)) goto Exit;
 
-    IPicture *picture = NULL;
     hr = OleLoadPicture(stream, (LONG)vpb->jpeg_data_len, FALSE, &IID_IPicture, &picture);
     if (FAILED(hr)) goto Exit;
 
