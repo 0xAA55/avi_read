@@ -555,12 +555,12 @@ ErrRet:
     return 0;
 }
 
-uint64_t get_super_precise_time_in_ns()
+uint64_t get_super_precise_time_in_ms()
 {
     uint64_t counter = 0, freq = 0;
     QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
     QueryPerformanceCounter((LARGE_INTEGER *)&counter);
-    return counter * 1000000000 / freq;
+    return counter * 1000 / freq;
 }
 
 #ifdef USE_HACKING_WAY_MSGBLOCKING_WORKAROUND

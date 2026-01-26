@@ -21,7 +21,7 @@
 #include "windows_demo_guts.h"
 #endif
 
-uint64_t get_super_precise_time_in_ns();
+uint64_t get_super_precise_time_in_ms();
 
 typedef struct my_avi_player_s
 {
@@ -222,20 +222,20 @@ static int my_avi_player_play(my_avi_player *p)
     }
 #endif
 
-    uint64_t start_time = get_super_precise_time_in_ns();
+    uint64_t start_time = get_super_precise_time_in_ms();
 #ifdef WINDOWS_DEMO
     uint64_t left_key_press_time = start_time;
     int left_key_down = 0;
 #endif
     while (have_video || have_audio)
     {
-        uint64_t cur_time = get_super_precise_time_in_ns();
-        uint64_t relative_time_ms = (cur_time - start_time) / 1000000;
+        uint64_t cur_time = get_super_precise_time_in_ms();
+        uint64_t relative_time_ms = (cur_time - start_time);
 
 #if WINDOWS_DEMO
         if (GetAsyncKeyState(VK_LEFT))
         {
-            uint64_t go_back = (cur_time - left_key_press_time) / 1000000;
+            uint64_t go_back = (cur_time - left_key_press_time);
             if (!left_key_down)
             {
                 left_key_press_time = cur_time;
@@ -338,11 +338,11 @@ int main(int argc, char**argv)
 
 #if __unix__
 #include <time.h>
-static uint64_t get_super_precise_time_in_ns()
+static uint64_t get_super_precise_time_in_ms()
 {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
-    return (uint64_t)tp.tv_sec * 1000000000 + tp.nsec;
+    return (uint64_t)tp.tv_sec * 1000 + tp.nsec / 1000000;
 }
 #endif
 
