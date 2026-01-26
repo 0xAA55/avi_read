@@ -1061,7 +1061,7 @@ AVI_FUNC int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_i
 		fsize_t to_move = s->cur_stream_packet_index - frame_index;
 		if (to_move > 1 && !informed)
 		{
-			INFO_PRINTF(s->r, "Skipping backward %"PRIfsize_t" frames" NL, to_move - 1);
+			INFO_PRINTF(s->r, "Stream %d: skipping backward %"PRIfsize_t" frames" NL, s->stream_id, to_move - 1);
 			informed = 1;
 		}
 		if (!avi_stream_reader_move_to_prev_packet(s, 0)) return 0;
@@ -1071,7 +1071,7 @@ AVI_FUNC int avi_video_seek_to_frame_index(avi_stream_reader *s, fsize_t frame_i
 		fsize_t to_move = frame_index - s->cur_stream_packet_index;
 		if (to_move > 1 && !informed)
 		{
-			INFO_PRINTF(s->r, "Skipping %"PRIfsize_t" frames" NL, to_move - 1);
+			INFO_PRINTF(s->r, "Stream %d: skipping %"PRIfsize_t" frames" NL, s->stream_id, to_move - 1);
 			informed = 1;
 		}
 		if (!avi_stream_reader_move_to_next_packet(s, 0)) return 0;
