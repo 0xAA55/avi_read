@@ -728,7 +728,7 @@ AVI_FUNC static int avi_indx_seek_to_packet(avi_stream_reader *s, uint64_t packe
 				continue;
 			}
 			entry_offset = cache->offset + 8 + sizeof(avi_meta_index);
-			if (!must_seek(r, (fsize_t)(entry_offset + packet_index * sizeof si))) return 0;
+			if (!must_seek(r, (fsize_t)(entry_offset + (packet_index - cache->start_packet_number) * sizeof si))) return 0;
 			if (!must_read(r, &si, sizeof si)) return 0;
 			s->is_no_more_packets = 0;
 			s->cur_4cc = cache->chunk_id;
