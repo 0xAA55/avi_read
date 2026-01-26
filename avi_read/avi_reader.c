@@ -640,7 +640,7 @@ AVI_FUNC static avi_indx_cached_entry *avi_indx_read_entry(avi_stream_reader *s,
 		cached = cached->next;
 	} while (cached);
 
-	INFO_PRINTF(r, "Reading super index %u for stream %u" NL, entry_index, s->stream_id);
+	INFO_PRINTF(r, "Reading super index %u for stream %u into cache" NL, entry_index, s->stream_id);
 
 	cached = indx->cache_tail;
 	avi_indx_move_cache_to_head(s, cached);
