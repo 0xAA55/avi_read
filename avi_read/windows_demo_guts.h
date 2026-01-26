@@ -55,6 +55,8 @@ typedef struct
     AudioPlayBuffer a_play_buf[AUDIO_PLAY_BUFFERS];
     size_t min_playable_size;
     int audio_buffer_is_playing;
+    HGLOBAL my_jpeg_picture_memory;
+    size_t my_jpeg_picture_memory_size;
     int should_quit;
     int exit_code;
 
@@ -116,17 +118,33 @@ void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
     HRESULT hr = S_OK;
     IPicture *picture = NULL;
     uint64_t time_start = get_super_precise_time_in_ms();
+
     // I'm using the very very old way to convert JPEG to BMP, because it supports C.
     // Older than WIC, and older than Gdiplus, older than C++ smart pointers.
-    HGLOBAL my_jpeg_picture_memory = GlobalAlloc(GMEM_MOVEABLE, vpb->jpeg_data_len);
-    if (!my_jpeg_picture_memory) goto Exit;
+    if (w->my_jpeg_picture_memory_size < vpb->jpeg_data_len)
+    {
+        w->my_jpeg_picture_memory_size = 0;
+        GlobalFree(w->my_jpeg_picture_memory);
+        w->my_jpeg_picture_memory = NULL;
+        if (w->my_jpeg_stream)
+        {
+            w->my_jpeg_stream->lpVtbl->Release(w->my_jpeg_stream);
+            w->my_jpeg_stream = NULL;
+        }
+    }
+    if (!w->my_jpeg_picture_memory)
+    {
+        w->my_jpeg_picture_memory = GlobalAlloc(GMEM_MOVEABLE, vpb->jpeg_data_len);
+        if (!w->my_jpeg_picture_memory) goto Exit;
+        w->my_jpeg_picture_memory_size = vpb->jpeg_data_len;
+    }
 
-    void *ptr = GlobalLock(my_jpeg_picture_memory);
+    void *ptr = GlobalLock(w->my_jpeg_picture_memory);
     if (!ptr) goto Exit;
 
+    memset(ptr, 0, w->my_jpeg_picture_memory_size);
     memcpy(ptr, vpb->jpeg_data, vpb->jpeg_data_len);
-
-    GlobalUnlock(my_jpeg_picture_memory);
+    GlobalUnlock(w->my_jpeg_picture_memory);
 
     // Here comes the COM part.
     hr = CreateStreamOnHGlobal(my_jpeg_picture_memory, TRUE, &stream);
@@ -156,7 +174,6 @@ void vpb_decode_jpeg(VideoPlayBuffer *vpb, WindowsDemoGuts *w)
 Exit:
     if (stream) stream->lpVtbl->Release(stream);
     if (picture) picture->lpVtbl->Release(picture);
-    if (my_jpeg_picture_memory) GlobalFree(my_jpeg_picture_memory);
 }
 
 size_t windows_demo_get_video_data(WindowsDemoGuts *w, void *buffer, fsize_t offset, fsize_t length)
@@ -446,6 +463,12 @@ LRESULT CALLBACK windows_demo_window_proc_W(HWND hWnd, uint32_t msg, WPARAM wp, 
 
 void windows_demo_destroy_window(WindowsDemoGuts *w)
 {
+    if (w->my_jpeg_picture_memory)
+    {
+        GlobalFree(w->my_jpeg_picture_memory);
+        w->my_jpeg_picture_memory = NULL;
+        w->my_jpeg_picture_memory_size = 0;
+    }
     if (w->Window && w->hDC) ReleaseDC(w->Window, w->hDC);
     if (w->Window) DestroyWindow(w->Window);
     if (w->WindowClass) UnregisterClassW(w->WindowClass, w->hInstance);
