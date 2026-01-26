@@ -305,6 +305,11 @@ static int my_avi_player_play(my_avi_player *p)
                 windows_demo_audio_buffers_get_status(&p->windows_guts, &num_idle, &num_playing);
                 if (num_playing < AUDIO_PLAY_BUFFERS)
                 {
+                    while (audio_byte_pos >= target_a_byte_pos + h_audio->audio_format.nAvgBytesPerSec)
+                    {
+                        avi_audio_seek_to_byte_offset(s_audio, target_a_byte_pos, 0);
+                        audio_byte_pos = target_a_byte_pos;
+                    }
                     if (audio_byte_pos >= target_a_byte_pos)
                     {
                         avi_stream_reader_move_to_next_packet(s_audio, 1);
