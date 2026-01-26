@@ -637,12 +637,13 @@ AVI_FUNC static avi_indx_cached_entry *avi_indx_read_entry(avi_stream_reader *s,
 	do
 	{
 		if (cached->index == entry_index && cached->offset != 0) return cached;
+		if (!cached->offset) break;
 		cached = cached->next;
 	} while (cached);
 
 	INFO_PRINTF(r, "Reading super index %u for stream %u into cache" NL, entry_index, s->stream_id);
 
-	cached = indx->cache_tail;
+	if (!cached) cached = indx->cache_tail;
 	avi_indx_move_cache_to_head(s, cached);
 	cached->index = entry_index;
 	if (!must_seek(r, indx->offset_to_first_entry + entry_index * sizeof si)) goto FailExit;
