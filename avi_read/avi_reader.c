@@ -1283,7 +1283,7 @@ AVI_FUNC int avi_stream_reader_move_to_next_packet(avi_stream_reader *s, int cal
 
 	return 1;
 ErrRet:
-	if (r) FATAL_PRINTF(r, "`avi_stream_reader_move_to_next_packet()` failed." NL, 0);
+	if (r) WARN_PRINTF(r, "`avi_stream_reader_move_to_next_packet()` failed." NL, 0);
 	return 0;
 }
 
@@ -1364,7 +1364,7 @@ AVI_FUNC int avi_stream_reader_move_to_prev_packet(avi_stream_reader *s, int cal
 
 	return 1;
 ErrRet:
-	if (r) FATAL_PRINTF(r, "`avi_stream_reader_move_to_prev_packet()` failed." NL, 0);
+	if (r) WARN_PRINTF(r, "`avi_stream_reader_move_to_prev_packet()` failed." NL, 0);
 	return 0;
 }
 
