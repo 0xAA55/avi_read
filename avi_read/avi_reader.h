@@ -39,6 +39,10 @@ typedef int64_t fssize_t;
 #define AVI_FUNC
 #endif
 
+#ifndef AVI_STATIC_FUNC
+#define AVI_STATIC_FUNC static
+#endif
+
 typedef struct
 {
 	avi_stream_header stream_header;
